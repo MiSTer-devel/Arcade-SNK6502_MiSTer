@@ -214,16 +214,23 @@ module snk6502_snd (
     // (cycle = 2^28), so the LUT values are 2^8 = 256x too large. Shift
     // right by 8 at load time to land on the correct magnitude without
     // rewriting all 256 table entries.
+    //
+    // IMPORTANT: compute from snd_rom_data directly, NOT from ch_romdata[].
+    // Both ch_romdata[] and ch_phase_step[] are driven by NBA from the same
+    // edge; reading ch_romdata[rom_latch_sel] here picks up the *pre-NBA*
+    // (stale) value, so ch0/ch1 phase_step ends up one full music cycle
+    // behind (~24 ms). snd_rom_data is the registered BRAM output that is
+    // already fresh at this edge for the channel indicated by rom_latch_sel.
     always @(posedge clk) begin
         if (reset) begin
             ch_phase_step[0] <= 0;
             ch_phase_step[1] <= 0;
             ch_phase_step[2] <= 0;
         end else if (rom_latch_sel < 3) begin
-            if (ch_romdata[rom_latch_sel] == 8'hff) begin
+            if (snd_rom_data == 8'hff) begin
                 ch_phase_step[rom_latch_sel] <= 0;
             end else begin
-                idx = 8'd255 - ch_romdata[rom_latch_sel];
+                idx = 8'd255 - snd_rom_data;
                 ch_phase_step[rom_latch_sel] <= phase_inc_lut[idx] >> 8;
             end
         end
@@ -328,17 +335,20 @@ module snk6502_snd (
             if (wr0) begin
                 // fantasy offset 0
                 ch_base[0]   <= {sound_port0[2:0], 8'h00};
+                // ch0: reset offset on mute OR on mute->unmute edge (MAME mute_channel / unmute_channel)
+                if (sound_port0[3] == 1'b0 || ch_mute[0]) ch_offset[0] <= 0;
                 ch_mute[0]   <= ~sound_port0[3];
-                if (sound_port0[3] == 1'b0) ch_offset[0] <= 0;   // muting ch0
+                // ch2: same rule
+                if (sound_port0[4] == 1'b0 || ch_mute[2]) ch_offset[2] <= 0;
                 ch_mute[2]   <= ~sound_port0[4];
-                if (sound_port0[4] == 1'b0) ch_offset[2] <= 0;   // muting ch2
             end
 
             if (wr1) begin
                 // fantasy offset 1
                 ch_base[1]   <= 13'h0800 | {sound_port1[2:0], 8'h00};
+                // ch1: reset offset on mute OR on mute->unmute edge (MAME mute_channel / unmute_channel)
+                if (sound_port1[3] == 1'b0 || ch_mute[1]) ch_offset[1] <= 0;
                 ch_mute[1]   <= ~sound_port1[3];
-                if (sound_port1[3] == 1'b0) ch_offset[1] <= 0;   // muting ch1
             end
 
             if (wr2) begin
@@ -352,7 +362,8 @@ module snk6502_snd (
 
             if (wr3) begin
                 // fantasy offset 3 – ch2 base high bits ($1000 region)
-                ch_base[2]   <= 13'h1000 | {sound_port3[6:4], 5'h00};
+                // MAME: 0x1000 | ((data & 0x70) << 4)  → bits [6:4] land at addr[10:8]
+                ch_base[2]   <= 13'h1000 | {sound_port3[6:4], 8'h00};
             end
         end
     end
@@ -379,6 +390,10 @@ module snk6502_snd (
                     sum = sum + interp;
                 end
             end
+            // MAME scales each waveform entry by 65535/160 (= 409), so
+            // per-channel peak is ±3272 and the 3-channel sum peaks at
+            // ±9816 — fits in 15 bits signed with headroom. Take the
+            // low 16 bits directly (no attenuation).
             audio_out <= sum[18:3];   // fits comfortably in 16-bit signed range
         end
     end

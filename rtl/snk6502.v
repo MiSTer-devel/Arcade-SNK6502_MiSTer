@@ -265,12 +265,17 @@ dpram #(.address_width(10)) color_ram_inst(
 // Character Generator RAM - 4KB at $1000-$1FFF
 // ---------------------------------------------------------------------------
 wire charram_cs = (cpu_addr[15:12] == 4'b0001);
-wire [7:0] charram_cpu_dout;
+// CPU-side readback: separate wire per plane, muxed on cpu_addr[11]
+wire [7:0] charram_p0_cpu_dout;
+wire [7:0] charram_p1_cpu_dout;
+wire [7:0] charram_cpu_dout = cpu_addr[11] ? charram_p1_cpu_dout : charram_p0_cpu_dout;
+
 // wire charram_wr = charram_cs & ~cpu_rw_n;
 wire charram_wr = charram_cs & ~cpu_rw_n & cpu_clken;
 
 // Charram split into two 2KB planes for simultaneous video read
-// Plane 0: $1000-$17FF (addr bit 11 = 0), Plane 1: $1800-$1FFF (addr bit 11 = 1)
+// Plane 0 (IC67): $1000-$17FF (addr bit 11 = 0)
+// Plane 1 (IC68): $1800-$1FFF (addr bit 11 = 1)
 wire [10:0] charram_vid_addr = {fg_tile_code, tile_line};
 wire [7:0]  charram_p0_dout, charram_p1_dout;
 
@@ -280,7 +285,7 @@ dpram #(.address_width(11)) char_ram_p0(
     .wren_a   (charram_wr & ~cpu_addr[11]),
     .address_a(cpu_addr[10:0]),
     .data_a   (cpu_dout),
-    .q_a      (charram_cpu_dout),
+    .q_a      (charram_p0_cpu_dout),
 
     .clock_b  (clk_master),
     .enable_b (1'b1),
@@ -296,7 +301,7 @@ dpram #(.address_width(11)) char_ram_p1(
     .wren_a   (charram_wr & cpu_addr[11]),
     .address_a(cpu_addr[10:0]),
     .data_a   (cpu_dout),
-    .q_a      (),
+    .q_a      (charram_p1_cpu_dout),
 
     .clock_b  (clk_master),
     .enable_b (1'b1),
@@ -711,11 +716,13 @@ wire display_active = de_pipe[ENVELOPE_DELAY-1];
 // ---------------------------------------------------------------------------
 // CPU read data mux
 // ---------------------------------------------------------------------------
+
 assign cpu_din =
     ram_cs      ? ram_dout :
     vram2_cs    ? vram2_cpu_dout :
     vram1_cs    ? vram1_cpu_dout :
     colorram_cs ? colorram_cpu_dout :
+//    colorram_cs ? {2'b00, colorram_cpu_dout[5:0]} :   // IC68 is 6-bit wide; bits 7:6 read as '1' on real HW
     charram_cs  ? charram_cpu_dout :
     crtc_cs     ? crtc_dout :
     in0_cs      ? in0 :

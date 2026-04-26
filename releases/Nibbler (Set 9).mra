@@ -67,4 +67,27 @@
         <part>05</part>
     </rom>
 
+    <!-- ROM index 3: Hiscore.dat configuration -->
+    <!--   Header (16 bytes):                                                       -->
+    <!--     01 FF FF FF   START_WAIT  = 0x01FFFFFF  (~0.7s @ 45MHz initial wait)   -->
+    <!--     00 FF         CHECK_WAIT  = 0x00FF                                     -->
+    <!--     00 02         CHECK_HOLD  = 0x0002                                     -->
+    <!--     00 02         WRITE_HOLD  = 0x0002                                     -->
+    <!--     00 01         WRITE_REPEATCOUNT = 0x0001                               -->
+    <!--     00 FF         WRITE_REPEATWAIT  = 0x00FF                               -->
+    <!--     00            ACCESS_PAUSEPAD   = 0x00                                 -->
+    <!--     00            CHANGEMASK        = 0x00                                 -->
+    <!--                                                                            -->
+    <!--   Entry 1 (8 bytes): scores+initials combined ($5993-$59D8, 70 bytes)      -->
+    <!--     ADDR=$5993, LEN=$46, START=$00, END=$14                                -->
+    <rom index="3">
+        <part>
+            01 FF FF FF 00 FF 00 02 00 02 00 01 00 FF 00 00
+            00 00 59 93 46 00 14 00
+        </part>
+    </rom>
+
+    <nvram index="4" size="70"/>
+
+
 </misterromdescription>
