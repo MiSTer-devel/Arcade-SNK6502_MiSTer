@@ -676,7 +676,8 @@ wire pballoon_bg_swap = (game_id == GID_PBALLOON);
 // Sasuke swaps bitplane order in GFX ROM
 wire sasuke_swap = (game_id == GID_SASUKE);
 wire [1:0] bg_pixel_raw = {bg_p1_latch[7], bg_p0_latch[7]};
-wire bg_swap = sasuke_swap | fantasy_nibbler_swap | pballoon_bg_swap;
+//wire bg_swap = sasuke_swap | fantasy_nibbler_swap | pballoon_bg_swap;
+wire bg_swap = sasuke_swap | fantasy_nibbler_swap | pballoon_bg_swap | (game_id == GID_VANGUARD);
 wire [1:0] bg_pixel = bg_swap ? {bg_pixel_raw[0], bg_pixel_raw[1]} : bg_pixel_raw;
 
 //wire [1:0] fg_pixel = {fg_p1_latch[7], fg_p0_latch[7]};
@@ -735,7 +736,8 @@ reg [ENVELOPE_DELAY_MAX-1:0] vsync_pipe;
 
 // Per-game pipe-tap index. Default = 13 (i.e. 14 stages, same as v2).
 // Vanguard starts at 0 — let the raw signals pass undelayed; tune up if needed.
-wire [3:0] env_idx = (game_id == GID_VANGUARD) ? 4'd0 : 4'd13;
+//wire [3:0] env_idx = (game_id == GID_VANGUARD) ? 4'd0 : 4'd13;
+wire [3:0] env_idx = 4'd13;
 
 always @(posedge clk_master) begin
     if (ce_pix) begin
@@ -827,12 +829,22 @@ dpram #(.address_width(13)) sound_rom(
 );
 
 // ---------------------------------------------------------------------------
-// Sound port write strobes — Fantasy/Nibbler path ($2100-$2103)
+// Sound port write strobes — game-aware (per MAME memory maps)
+//   Fantasy/Nibbler:  $2100-$2103  (port 3 also written by fantasy_flipscreen_w)
+//   Vanguard:         $3100-$3102  (no port 3; $3103 is flipscreen only)
+//   Pioneer Balloon:  $B100-$B102  (no port 3; $B103 is flipscreen only)
+// Address ranges don't overlap, so a simple OR decode works without game_id.
 // ---------------------------------------------------------------------------
-wire snd_wr0 = io_wr & (cpu_addr == 16'h2100);
-wire snd_wr1 = io_wr & (cpu_addr == 16'h2101);
-wire snd_wr2 = io_wr & (cpu_addr == 16'h2102);
-wire snd_wr3 = io_wr & (cpu_addr == 16'h2103);
+wire snd_wr0 = io_wr & ((cpu_addr == 16'h2100) |
+                        (cpu_addr == 16'h3100) |
+                        (cpu_addr == 16'hB100));
+wire snd_wr1 = io_wr & ((cpu_addr == 16'h2101) |
+                        (cpu_addr == 16'h3101) |
+                        (cpu_addr == 16'hB101));
+wire snd_wr2 = io_wr & ((cpu_addr == 16'h2102) |
+                        (cpu_addr == 16'h3102) |
+                        (cpu_addr == 16'hB102));
+wire snd_wr3 = io_wr & (cpu_addr == 16'h2103);  // Fantasy/Nibbler only
 
 // ---------------------------------------------------------------------------
 // SNK6502 tone generator
