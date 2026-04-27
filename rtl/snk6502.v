@@ -552,7 +552,8 @@ always @(posedge clk_master or posedge reset)
         // bit 7 = flip screen, bit 3 = charbank (inverted), bits 2:0 = backcolor
         if (flip_wr) begin
             flip      <= cpu_dout[7];
-            charbank  <= ~cpu_dout[3];
+//            charbank  <= ~cpu_dout[3];
+            charbank  <= (game_id == GID_VANGUARD) ? 1'b0 : ~cpu_dout[3];
             backcolor <= cpu_dout[2:0];
         end
 
