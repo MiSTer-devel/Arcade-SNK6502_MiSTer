@@ -515,13 +515,17 @@ always @(posedge clk_master or posedge reset)
 
 wire vblank_rising = crtc_vblank & ~vblank_prev;
 
+// Mirror MAME's HOLD_LINE: assert on vblank rising edge,
+// auto-clear when CPU starts fetching the IRQ vector ($FFFE).
+wire irq_vector_fetch = (cpu_addr == 16'hFFFE) & cpu_rw_n & cpu_clken;
+
 reg cpu_irq;
 always @(posedge clk_master or posedge reset)
     if (reset)
         cpu_irq <= 1'b0;
     else if (vblank_rising)
         cpu_irq <= (~is_slow_cpu || irq_mask) ? 1'b1 : 1'b0;
-    else if (~crtc_vblank)
+    else if (irq_vector_fetch)
         cpu_irq <= 1'b0;
 
 wire cpu_irq_n = ~cpu_irq;
