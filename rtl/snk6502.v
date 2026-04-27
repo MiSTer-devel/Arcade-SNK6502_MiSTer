@@ -242,10 +242,13 @@ wire [7:0] colorram_cpu_dout;
 // wire colorram_wr = colorram_cs & ~cpu_rw_n;
 wire colorram_wr = colorram_cs & ~cpu_rw_n & cpu_clken;
 
-wire [9:0] colorram_vid_addr;
-wire [7:0] colorram_vid_dout;
+wire [9:0] colorram_fg_vid_addr;  // unscrolled (FG tile)
+wire [9:0] colorram_bg_vid_addr;  // scrolled   (BG tile)
+wire [7:0] colorram_fg_vid_dout;
+wire [7:0] colorram_bg_vid_dout;
 
-dpram #(.address_width(10)) color_ram_inst(
+// Copy A: CPU port + FG video port (drives CPU readback)
+dpram #(.address_width(10)) color_ram_fg(
     .clock_a  (clk_master),
     .enable_a (1'b1),
     .wren_a   (colorram_wr),
@@ -256,9 +259,26 @@ dpram #(.address_width(10)) color_ram_inst(
     .clock_b  (clk_master),
     .enable_b (1'b1),
     .wren_b   (1'b0),
-    .address_b(colorram_vid_addr),
+    .address_b(colorram_fg_vid_addr),
     .data_b   (8'd0),
-    .q_b      (colorram_vid_dout)
+    .q_b      (colorram_fg_vid_dout)
+);
+
+// Copy B: mirror writes from CPU; video port drives BG color attribute
+dpram #(.address_width(10)) color_ram_bg(
+    .clock_a  (clk_master),
+    .enable_a (1'b1),
+    .wren_a   (colorram_wr),
+    .address_a(cpu_addr[9:0]),
+    .data_a   (cpu_dout),
+    .q_a      (),
+
+    .clock_b  (clk_master),
+    .enable_b (1'b1),
+    .wren_b   (1'b0),
+    .address_b(colorram_bg_vid_addr),
+    .data_b   (8'd0),
+    .q_b      (colorram_bg_vid_dout)
 );
 
 // ---------------------------------------------------------------------------
@@ -427,7 +447,8 @@ wire [9:0] bg_tile_addr = {bg_row, bg_col};
 
 assign vram2_vid_addr    = tile_addr;
 assign vram1_vid_addr    = bg_tile_addr;
-assign colorram_vid_addr = tile_addr;
+assign colorram_fg_vid_addr = tile_addr;
+assign colorram_bg_vid_addr = bg_tile_addr;
 
 // ============================================================
 // I/O Write Decode
@@ -601,13 +622,13 @@ assign ce_pix = (clk_div[0] == 1'b1) && (clk_div != 4'd15);
 wire [8:0] bg_tile_code = {charbank, vram1_vid_dout};
 
 wire [2:0] bg_color = (game_id <= GID_SATANSAT) ?
-    (colorram_vid_dout[3:2]) :
-    (colorram_vid_dout[5:3]);
+    {1'b0, colorram_bg_vid_dout[3:2]} :
+    (colorram_bg_vid_dout[5:3]);
 
 wire [7:0] fg_tile_code = vram2_vid_dout;
 wire [2:0] fg_color = (game_id <= GID_SATANSAT) ?
-    (colorram_vid_dout[1:0]) :
-    (colorram_vid_dout[2:0]);
+    {1'b0, colorram_fg_vid_dout[1:0]} :
+    (colorram_fg_vid_dout[2:0]);
 
 reg [7:0] bg_p0_latch, bg_p1_latch;
 reg [7:0] fg_p0_latch, fg_p1_latch;
