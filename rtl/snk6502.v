@@ -665,10 +665,14 @@ end
 
 wire fantasy_nibbler_swap = (game_id == GID_FANTASY) || (game_id == GID_NIBBLER);
 
+// Pioneer Balloon: BG plane swap candidate (uses same hardware family)
+wire pballoon_bg_swap = (game_id == GID_PBALLOON);
+
 // Sasuke swaps bitplane order in GFX ROM
 wire sasuke_swap = (game_id == GID_SASUKE);
 wire [1:0] bg_pixel_raw = {bg_p1_latch[7], bg_p0_latch[7]};
-wire [1:0] bg_pixel = sasuke_swap ? {bg_pixel_raw[0], bg_pixel_raw[1]} : bg_pixel_raw;
+wire bg_swap = sasuke_swap | fantasy_nibbler_swap | pballoon_bg_swap;
+wire [1:0] bg_pixel = bg_swap ? {bg_pixel_raw[0], bg_pixel_raw[1]} : bg_pixel_raw;
 
 //wire [1:0] fg_pixel = {fg_p1_latch[7], fg_p0_latch[7]};
 wire [1:0] fg_pixel_raw = {fg_p1_latch[7], fg_p0_latch[7]};
