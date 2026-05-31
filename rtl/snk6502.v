@@ -12,6 +12,7 @@ module snk6502(
     input         clk_sys,        // ~45 MHz system clock (for ROM download)
     input         reset,
     input         pause,
+    input         user_flip,
     output        ce_pix,
 
     // Game configuration (selects memory map / I/O layout)
@@ -434,12 +435,21 @@ mc6845 crtc(
     .RA     (crtc_ra)
 );
 
-wire [4:0] tile_col  = crtc_ma[4:0];
-wire [4:0] tile_row  = crtc_ma[9:5];
-wire [2:0] tile_line = crtc_ra[2:0];
-wire [9:0] tile_addr = crtc_ma[9:0];
+wire [4:0] tile_col_raw  = crtc_ma[4:0];
+wire [4:0] tile_row_raw  = crtc_ma[9:5];
+wire [2:0] tile_line_raw = crtc_ra[2:0];
 
-// BG layer: apply scroll registers
+wire [4:0] flip_row_bias =
+    ((game_id == GID_VANGUARD) ||
+     (game_id == GID_FANTASY)  ||
+     (game_id == GID_NIBBLER)) ? 5'd28 :
+    5'd0;
+
+wire [4:0] tile_col  = flip_eff ? ~tile_col_raw  : tile_col_raw;
+wire [4:0] tile_row  = flip_eff ? (~tile_row_raw + flip_row_bias) : tile_row_raw;
+wire [2:0] tile_line = flip_eff ? ~tile_line_raw : tile_line_raw;
+wire [9:0] tile_addr = {tile_row, tile_col};
+
 wire [4:0] bg_col = tile_col + scroll_x[7:3];
 wire [4:0] bg_row = tile_row + scroll_y[7:3];
 wire [9:0] bg_tile_addr = {bg_row, bg_col};
@@ -574,7 +584,8 @@ always @(posedge clk_master or posedge reset)
         if (scrolly_wr) scroll_y <= cpu_dout;
     end
 
-assign flip_screen = flip;
+wire flip_eff = flip ^ user_flip;
+assign flip_screen = flip_eff;
 
 // ============================================================
 // I/O Read Decode
@@ -652,7 +663,7 @@ reg crtc_clken_d;
 always @(posedge clk_master) crtc_clken_d <= crtc_clken;
 
 always @(posedge clk_master) begin
-    if (crtc_clken) begin
+    if (flip_eff ? crtc_clken_d : crtc_clken) begin
         bg_p0_latch    <= bg_p0_dout;
         bg_p1_latch    <= bg_p1_dout;
         fg_p0_latch    <= fg_p0_raw;
@@ -660,10 +671,17 @@ always @(posedge clk_master) begin
         bg_color_latch <= bg_color;
         fg_color_latch <= fg_color;
     end else if (ce_pix) begin
+    if (flip_eff) begin
+        bg_p0_latch <= {1'b0, bg_p0_latch[7:1]};
+        bg_p1_latch <= {1'b0, bg_p1_latch[7:1]};
+        fg_p0_latch <= {1'b0, fg_p0_latch[7:1]};
+        fg_p1_latch <= {1'b0, fg_p1_latch[7:1]};
+    end else begin		
         bg_p0_latch <= {bg_p0_latch[6:0], 1'b0};
         bg_p1_latch <= {bg_p1_latch[6:0], 1'b0};
         fg_p0_latch <= {fg_p0_latch[6:0], 1'b0};
         fg_p1_latch <= {fg_p1_latch[6:0], 1'b0};
+        end
     end
 end
 
@@ -674,13 +692,13 @@ wire pballoon_bg_swap = (game_id == GID_PBALLOON);
 
 // Sasuke swaps bitplane order in GFX ROM
 wire sasuke_swap = (game_id == GID_SASUKE);
-wire [1:0] bg_pixel_raw = {bg_p1_latch[7], bg_p0_latch[7]};
+wire [1:0] bg_pixel_raw = flip_eff ? {bg_p1_latch[0], bg_p0_latch[0]} : {bg_p1_latch[7], bg_p0_latch[7]};
 //wire bg_swap = sasuke_swap | fantasy_nibbler_swap | pballoon_bg_swap;
 wire bg_swap = sasuke_swap | fantasy_nibbler_swap | pballoon_bg_swap | (game_id == GID_VANGUARD);
 wire [1:0] bg_pixel = bg_swap ? {bg_pixel_raw[0], bg_pixel_raw[1]} : bg_pixel_raw;
 
 //wire [1:0] fg_pixel = {fg_p1_latch[7], fg_p0_latch[7]};
-wire [1:0] fg_pixel_raw = {fg_p1_latch[7], fg_p0_latch[7]};
+wire [1:0] fg_pixel_raw = flip_eff ? {fg_p1_latch[0], fg_p0_latch[0]} : {fg_p1_latch[7], fg_p0_latch[7]};
 wire [1:0] fg_pixel = fantasy_nibbler_swap ?
     {fg_pixel_raw[0], fg_pixel_raw[1]} :   // swapped planes
     fg_pixel_raw;
@@ -735,7 +753,8 @@ reg [ENVELOPE_DELAY_MAX-1:0] vsync_pipe;
 
 // Per-game pipe-tap index. Default = 13 (i.e. 14 stages, same as v2).
 // Vanguard starts at 0 — let the raw signals pass undelayed; tune up if needed.
-wire [3:0] env_idx = (game_id == GID_SASUKE) ? 4'd10 : 4'd13;
+wire [3:0] env_idx_base = (game_id == GID_SASUKE) ? 4'd10 : 4'd13;
+wire [3:0] env_idx = flip_eff ? (env_idx_base + 4'd1) : env_idx_base;
 //wire [3:0] env_idx = 4'd13;
 
 always @(posedge clk_master) begin
