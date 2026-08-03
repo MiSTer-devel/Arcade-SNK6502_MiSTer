@@ -8,4 +8,9 @@ set_global_assignment -name VERILOG_FILE rtl/spram.v
 set_global_assignment -name SYSTEMVERILOG_FILE Arcade-SNK6502.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/sound/snk6502_sound.sv
 set_global_assignment -name VERILOG_FILE rtl/sound/snk6502_noise.v
+set_global_assignment -name VERILOG_FILE rtl/sound/hd38880/hd38880_ctrl.v
+set_global_assignment -name VERILOG_FILE rtl/sound/hd38880/hd38880_unpack.v
+set_global_assignment -name VERILOG_FILE rtl/sound/hd38880/hd38880_dectab.v
+set_global_assignment -name VERILOG_FILE rtl/sound/hd38880/parcor_lattice.v
+set_global_assignment -name VERILOG_FILE rtl/sound/hd38880/hd38880_top.v
 set_global_assignment -name VHDL_FILE rtl/ram_rom/dpram_dc.vhd

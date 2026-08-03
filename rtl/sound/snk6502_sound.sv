@@ -10,6 +10,12 @@ module snk6502_snd (
     input  wire                 wr1,          // one-cycle write strobe for port 1
     input  wire                 wr2,          // one-cycle write strobe for port 2
     input  wire                 wr3,          // one-cycle write strobe for port 3 (new)
+    // VANGUARD-SOUND-2026-08-03: MAME implements a SEPARATE vanguard_sound_device
+    // (snk6502_a.cpp:573) whose sound_w differs from fantasy_sound_device::sound_w
+    // (:758). Fantasy/Nibbler/PBalloon all share the Fantasy path (nibbler_ and
+    // pballoon_sound_device subclass fantasy_sound_device and inherit sound_w),
+    // so ONLY Vanguard needs splitting out. See Claude/vanguard_audio_audit_2026-08-03.md
+    input  wire                 game_is_vanguard,
     input  wire        [7:0]    snd_rom_data, // data from external sound ROM (combinatorial or 1-cycle registered)
     output reg         [12:0]   snd_rom_addr, // address to sound ROM
     output reg  signed [15:0]   audio_out,    // 16-bit signed PCM output (sum of 3 channels)
@@ -82,7 +88,24 @@ module snk6502_snd (
     reg [4:0] wf_bit0, wf_bit1, wf_bit2, wf_bit3;
     reg [4:0] wf_base_val, wf_data_val;
 
-    wire [3:0] ch0_mask_calc = ((wf_data & 8'h09) | ((wf_data & 8'h02) << 1) | ((wf_data & 8'h04) >> 1)) & 8'h0F;
+    // VANGUARD-SOUND-2026-08-03: the port-2 ch0 waveform swizzle is PER GAME -
+    // the AS1..AS4 pins are wired to different data bits on the two boards.
+    //   Fantasy  (snk6502_a.cpp:834): AS1,AS3,AS2,AS4 -> (d&0x9)|((d&2)<<1)|((d&4)>>1)
+    //   Vanguard (snk6502_a.cpp:656): AS1,AS2,AS4,AS3 -> (d&0x3)|((d&4)<<1)|((d&8)>>1)
+    // ch1 is a plain (data >> 4) on both.
+    wire [3:0] ch0_mask_fantasy  = ((wf_data & 8'h09) | ((wf_data & 8'h02) << 1) | ((wf_data & 8'h04) >> 1)) & 8'h0F;
+    wire [3:0] ch0_mask_vanguard = ((wf_data & 8'h03) | ((wf_data & 8'h04) << 1) | ((wf_data & 8'h08) >> 1)) & 8'h0F;
+    wire [3:0] ch0_mask_calc     = game_is_vanguard ? ch0_mask_vanguard : ch0_mask_fantasy;
+
+    // VANGUARD-SOUND-2026-08-03: sound0_stop_on_rollover. MAME sets it per game on
+    // every port-0 write: vanguard=1 (:594), fantasy=0 (:779). Constant per game, so
+    // tied rather than latched. When set, ch0 self-mutes as its offset wraps to 0
+    // (:555) - i.e. Vanguard music is ONE-SHOT. Without this ch0 loops forever.
+    wire       sound0_stop_on_rollover = game_is_vanguard;
+
+    // Post-increment ch0 offset, shared by the music tick and the rollover test so
+    // both see exactly the same value (MAME increments, masks, THEN tests == 0).
+    wire [7:0] ch0_offset_next = (ch_offset[0] + 8'd1) & ch_mask[0];
 
     // Phase increment LUT
     // Computed as round(1048576 * 65536 / (526 * d)) where d = 256 - period
@@ -327,9 +350,14 @@ module snk6502_snd (
             ch_mute[2]   <= 1'b1;
             ch_offset[0] <= 0; ch_offset[1] <= 0; ch_offset[2] <= 0;
             ch_mask[0]   <= 8'hff; ch_mask[1] <= 8'hff; ch_mask[2] <= 8'hff;
-            ch_base[0]   <= 11'h0000;
-            ch_base[1]   <= 11'h0800;
-            ch_base[2]   <= 11'h1000;          // ch2 starts at $1000 (high bits set on writes)
+            // WIDTH-FIX-2026-08-03: these were 11'h0000/11'h0800/11'h1000, but ch_base
+            // is reg [12:0]. 0x800 and 0x1000 do NOT fit in 11 bits, so both reset
+            // values silently truncated to 0. Caught by verilator --lint-only.
+            // (Only affects state before the first port write - the wr1/wr3 handlers
+            // already use correct 13'h literals - but it was wrong as written.)
+            ch_base[0]   <= 13'h0000;
+            ch_base[1]   <= 13'h0800;
+            ch_base[2]   <= 13'h1000;          // ch2 starts at $1000 (high bits set on writes)
             wf_wr        <= 1'b0;              // rebuild trigger must start cleared (was power-up undefined)
 
             // Channel 2 is always a square wave (MAME special case). Initialize at reset.
@@ -339,19 +367,50 @@ module snk6502_snd (
             end
         end else begin
             if (music_tick && !pause) begin      // HALT: freeze sequencer offset on pause
-                ch_offset[0] <= (ch_offset[0] + 1'd1) & ch_mask[0];
+                ch_offset[0] <= ch0_offset_next;
                 ch_offset[1] <= (ch_offset[1] + 1'd1) & ch_mask[1];
                 ch_offset[2] <= (ch_offset[2] + 1'd1) & ch_mask[2];
+                // MAME sound_stream_update (:555): after ALL offsets advance,
+                //   if (tone_channels[0].offset == 0 && sound0_stop_on_rollover)
+                //       tone_channels[0].mute = 1;
+                // Vanguard only. Note it tests the POST-increment offset.
+                if (sound0_stop_on_rollover && (ch0_offset_next == 8'd0))
+                    ch_mute[0] <= 1'b1;
             end
             if (wr0) begin
-                // fantasy offset 0
-                ch_base[0]   <= {sound_port0[2:0], 8'h00};
-                // ch0: reset offset on mute OR on mute->unmute edge (MAME mute_channel / unmute_channel)
-                if (sound_port0[3] == 1'b0 || ch_mute[0]) ch_offset[0] <= 0;
-                ch_mute[0]   <= ~sound_port0[3];
-                // ch2: same rule
-                if (sound_port0[4] == 1'b0 || ch_mute[2]) ch_offset[2] <= 0;
-                ch_mute[2]   <= ~sound_port0[4];
+                if (game_is_vanguard) begin
+                    // MAME vanguard_sound_device::sound_w offset 0 (snk6502_a.cpp:577-617)
+                    //   bits 0-2 : MUSIC A8..A10  -> ch0 base
+                    //   bit 3    : mute_channel(0)     <- SET-ONLY
+                    //   bit 4    : unmute_channel(0)   <- SET-ONLY, SAME channel
+                    //   bit 5/6/7: SHOT A / SHOT B / BOMB (samples + SN76477 #2, not modelled)
+                    // Bits 3 and 4 are INDEPENDENT set-only actions: if neither is set the
+                    // mute state is LEFT UNCHANGED. This is a different machine from the
+                    // Fantasy path's assign-every-write, not just different bit numbering.
+                    // Two sequential ifs (not if/else) so that if BOTH are set, unmute wins,
+                    // matching MAME's statement order.
+                    ch_base[0] <= {sound_port0[2:0], 8'h00};
+                    if (sound_port0[3]) begin           // mute_channel(0): mute + offset=0
+                        ch_mute[0]   <= 1'b1;
+                        ch_offset[0] <= 0;
+                    end
+                    if (sound_port0[4]) begin           // unmute_channel(0): offset=0 only on edge
+                        if (ch_mute[0]) ch_offset[0] <= 0;
+                        ch_mute[0]   <= 1'b0;
+                    end
+                    // Vanguard has NO port 3 and never unmutes ch2 (its bit 4 targets ch0),
+                    // so channel 2 must be left alone here - it stays muted from reset.
+                    // The old shared code drove ch2 from bit 4, adding a spurious 3rd voice.
+                end else begin
+                    // fantasy / nibbler / pballoon offset 0 (snk6502_a.cpp:762-795) - UNCHANGED
+                    ch_base[0]   <= {sound_port0[2:0], 8'h00};
+                    // ch0: reset offset on mute OR on mute->unmute edge (MAME mute_channel / unmute_channel)
+                    if (sound_port0[3] == 1'b0 || ch_mute[0]) ch_offset[0] <= 0;
+                    ch_mute[0]   <= ~sound_port0[3];
+                    // ch2: same rule
+                    if (sound_port0[4] == 1'b0 || ch_mute[2]) ch_offset[2] <= 0;
+                    ch_mute[2]   <= ~sound_port0[4];
+                end
             end
 
             if (wr1) begin

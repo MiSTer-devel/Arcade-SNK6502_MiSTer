@@ -1,0 +1,2705 @@
+F000: 38       sec
+F001: 7C C2 82 nop $82c2, x
+F004: 86 7C    stx $7c
+F006: 38       sec
+F007: 00       brk
+F008: 02       kil
+F009: 02       kil
+F00A: FE FE 42 inc $42fe, x
+F00D: 02       kil
+F00E: 00       brk
+F00F: 00       brk
+F010: 62       kil
+F011: F2       kil
+F012: BA       tsx
+F013: 9A       txs
+F014: 9E CE 46 shx $46ce, y
+F017: 00       brk
+F018: 8C DE F2 sty $f2de
+F01B: B2       kil
+F01C: 92       kil
+F01D: 86 04    stx $04
+F01F: 00       brk
+F020: 08       php
+F021: FE FE C8 inc $c8fe, x
+F024: 68       pla
+F025: 38       sec
+F026: 18       clc
+F027: 00       brk
+F028: 1C BE A2 nop $a2be, x
+F02B: A2 A2    ldx #$a2
+F02D: E6 E4    inc $e4
+F02F: 00       brk
+F030: 0C 9E 92 nop $929e
+F033: 92       kil
+F034: D2       kil
+F035: 7E 3C 00 ror $003c, x
+F038: C0 E0    cpy #$e0
+F03A: B0 9E    bcs $efda
+F03C: 8E C0 C0 stx $c0c0
+F03F: 00       brk
+F040: 0C 6E 9A nop $9a6e
+F043: 9A       txs
+F044: B2       kil
+F045: F2       kil
+F046: 6C 00 78 jmp ($7800)
+F049: FC 96 92 nop $9296, x
+F04C: 92       kil
+F04D: F2       kil
+F04E: 60       rts
+F04F: 00       brk
+F050: 3E 7E C8 rol $c87e, x
+F053: 88       dey
+F054: C8       iny
+F055: 7E 3E 00 ror $003e, x
+F058: 6C FE 92 jmp ($92fe)
+F05B: 92       kil
+F05C: 92       kil
+F05D: FE FE 00 inc $00fe, x
+F060: 44 C6    nop $c6
+F062: 82 82    nop #$82
+F064: C6 7C    dec $7c
+F066: 38       sec
+F067: 00       brk
+F068: 38       sec
+F069: 7C C6 82 nop $82c6, x
+F06C: 82 FE    nop #$fe
+F06E: FE 00 82 inc $8200, x
+F071: 92       kil
+F072: 92       kil
+F073: 92       kil
+F074: FE FE 00 inc $00fe, x
+F077: 00       brk
+F078: 80 90    nop #$90
+F07A: 90 90    bcc $f00c
+F07C: 90 FE    bcc $f07c
+F07E: FE 00 9E inc $9e00, x
+F081: 9E 92 82 shx $8292, y
+F084: C6 7C    dec $7c
+F086: 38       sec
+F087: 00       brk
+F088: FE FE 10 inc $10fe, x
+F08B: 10 10    bpl $f09d
+F08D: FE FE 00 inc $00fe, x
+F090: 82 82    nop #$82
+F092: FE FE 82 inc $82fe, x
+F095: 82 00    nop #$00
+F097: 00       brk
+F098: FC FE 02 nop $02fe, x
+F09B: 02       kil
+F09C: 02       kil
+F09D: 06 04    asl $04
+F09F: 00       brk
+F0A0: 82 C6    nop #$c6
+F0A2: 6E 3C 18 ror $183c
+F0A5: FE FE 00 inc $00fe, x
+F0A8: 02       kil
+F0A9: 02       kil
+F0AA: 02       kil
+F0AB: 02       kil
+F0AC: FE FE 00 inc $00fe, x
+F0AF: 00       brk
+F0B0: FE FE 70 inc $70fe, x
+F0B3: 38       sec
+F0B4: 70 FE    bvs $f0b4
+F0B6: FE 00 FE inc $fe00, x
+F0B9: FE 1C 38 inc $381c, x
+F0BC: 70 FE    bvs $f0bc
+F0BE: FE 00 7C inc $7c00, x
+F0C1: FE 82 82 inc $8282, x
+F0C4: 82 FE    nop #$fe
+F0C6: 7C 00 70 nop $7000, x
+F0C9: F8       sed
+F0CA: 88       dey
+F0CB: 88       dey
+F0CC: 88       dey
+F0CD: FE FE 00 inc $00fe, x
+F0D0: 7A       nop
+F0D1: FC 8E 8A nop $8a8e, x
+F0D4: 82 FE    nop #$fe
+F0D6: 7C 00 72 nop $7200, x
+F0D9: F6 9E    inc $9e, x
+F0DB: 8C 88 FE sty $fe88
+F0DE: FE 00 0C inc $0c00, x
+F0E1: 5E D2 92 lsr $92d2, x
+F0E4: 92       kil
+F0E5: F6 64    inc $64, x
+F0E7: 00       brk
+F0E8: 80 80    nop #$80
+F0EA: FE FE 80 inc $80fe, x
+F0ED: 80 00    nop #$00
+F0EF: 00       brk
+F0F0: FC FE 02 nop $02fe, x
+F0F3: 02       kil
+F0F4: 02       kil
+F0F5: FE FC 00 inc $00fc, x
+F0F8: F0 F8    beq $f0f2
+F0FA: 1C 0E 1C nop $1c0e, x
+F0FD: F8       sed
+F0FE: F0 00    beq $f100
+F100: F8       sed
+F101: FE 1C 38 inc $381c, x
+F104: 1C FE F8 nop $f8fe, x
+F107: 00       brk
+F108: C6 EE    dec $ee
+F10A: 7C 38 7C nop $7c38, x
+F10D: EE C6 00 inc $00c6
+F110: C0 F0    cpy #$f0
+F112: 1E 1E F0 asl $f01e, x
+F115: C0 00    cpy #$00
+F117: 00       brk
+F118: C2 E2    nop #$e2
+F11A: F2       kil
+F11B: BA       tsx
+F11C: 9E 8E 86 shx $868e, y
+F11F: 00       brk
+F120: 00       brk
+F121: 00       brk
+F122: 00       brk
+F123: 00       brk
+F124: E0 D0    cpx #$d0
+F126: 00       brk
+F127: 00       brk
+F128: 00       brk
+F129: 18       clc
+F12A: 18       clc
+F12B: 18       clc
+F12C: 18       clc
+F12D: 18       clc
+F12E: 00       brk
+F12F: 00       brk
+F130: 00       brk
+F131: 00       brk
+F132: 00       brk
+F133: 00       brk
+F134: 06 06    asl $06
+F136: 00       brk
+F137: 00       brk
+F138: 82 82    nop #$82
+F13A: 7C 00 4C nop $4c00, x
+F13D: 92       kil
+F13E: 92       kil
+F13F: 64 FE    nop $fe
+F141: 00       brk
+F142: 7C 82 82 nop $8282, x
+F145: 7C 00 44 nop $4400, x
+F148: 92       kil
+F149: 92       kil
+F14A: FE 00 00 inc $0000, x
+F14D: 6E 90 90 ror $9090
+F150: 82 82    nop #$82
+F152: 7C 00 44 nop $4400, x
+F155: 82 82    nop #$82
+F157: 7C FE 18 nop $18fe, x
+F15A: 30 FE    bmi $f15a
+F15C: 00       brk
+F15D: FE 00 7C inc $7c00, x
+F160: 82 82    nop #$82
+F162: 7C 00 6E nop $6e00, x
+F165: 90 90    bcc $f0f7
+F167: FE FE 00 inc $00fe, x
+F16A: FC 02 02 nop $0202, x
+F16D: FC 00 7C nop $7c00, x
+F170: 7C 82 82 nop $8282, x
+F173: FE 00 FE inc $fe00, x
+F176: 18       clc
+F177: 30 00    bmi $f179
+F179: FE 00 00 inc $0000, x
+F17C: FE 10 10 inc $1010, x
+F17F: FE 00 00 inc $0000, x
+F182: 00       brk
+F183: 00       brk
+F184: 00       brk
+F185: 00       brk
+F186: 00       brk
+F187: 00       brk
+F188: 00       brk
+F189: 00       brk
+F18A: 00       brk
+F18B: 00       brk
+F18C: F0 00    beq $f18e
+F18E: 00       brk
+F18F: 00       brk
+F190: 00       brk
+F191: 00       brk
+F192: 00       brk
+F193: 00       brk
+F194: FF 00 00 isb $0000, x
+F197: 00       brk
+F198: 00       brk
+F199: 00       brk
+F19A: 00       brk
+F19B: 00       brk
+F19C: 0F 00 00 slo $0000
+F19F: 00       brk
+F1A0: 00       brk
+F1A1: 00       brk
+F1A2: 00       brk
+F1A3: 00       brk
+F1A4: 10 10    bpl $f1b6
+F1A6: 10 10    bpl $f1b8
+F1A8: 10 10    bpl $f1ba
+F1AA: 10 10    bpl $f1bc
+F1AC: 10 10    bpl $f1be
+F1AE: 10 10    bpl $f1c0
+F1B0: 10 10    bpl $f1c2
+F1B2: 10 10    bpl $f1c4
+F1B4: 00       brk
+F1B5: 00       brk
+F1B6: 00       brk
+F1B7: 00       brk
+F1B8: FF FF FF isb $ffff, x
+F1BB: FF FF FF isb $ffff, x
+F1BE: FF FF 00 isb $00ff, x
+F1C1: 00       brk
+F1C2: 00       brk
+F1C3: 00       brk
+F1C4: 00       brk
+F1C5: 00       brk
+F1C6: 00       brk
+F1C7: 00       brk
+F1C8: FF FF FF isb $ffff, x
+F1CB: FF FF FF isb $ffff, x
+F1CE: FF FF FF isb $ffff, x
+F1D1: FF FF FF isb $ffff, x
+F1D4: FF FF FF isb $ffff, x
+F1D7: FF 00 00 isb $0000, x
+F1DA: 00       brk
+F1DB: 00       brk
+F1DC: 00       brk
+F1DD: 00       brk
+F1DE: 00       brk
+F1DF: 00       brk
+F1E0: 00       brk
+F1E1: 00       brk
+F1E2: 00       brk
+F1E3: 00       brk
+F1E4: 00       brk
+F1E5: 00       brk
+F1E6: 00       brk
+F1E7: 10 00    bpl $f1e9
+F1E9: 00       brk
+F1EA: 00       brk
+F1EB: 00       brk
+F1EC: 00       brk
+F1ED: 00       brk
+F1EE: 00       brk
+F1EF: 00       brk
+F1F0: 00       brk
+F1F1: 00       brk
+F1F2: 00       brk
+F1F3: 00       brk
+F1F4: 00       brk
+F1F5: 00       brk
+F1F6: 00       brk
+F1F7: 00       brk
+F1F8: 10 38    bpl $f232
+F1FA: 7C 7C 7C nop $7c7c, x
+F1FD: FE EE EE inc $eeee, x
+F200: 00       brk
+F201: 00       brk
+F202: 00       brk
+F203: 00       brk
+F204: 00       brk
+F205: 00       brk
+F206: 00       brk
+F207: 00       brk
+F208: 01 01    ora ($01, x)
+F20A: 01 00    ora ($00, x)
+F20C: 00       brk
+F20D: 00       brk
+F20E: 00       brk
+F20F: 00       brk
+F210: 83 01    sax ($01, x)
+F212: 01 00    ora ($00, x)
+F214: 00       brk
+F215: 00       brk
+F216: 00       brk
+F217: 00       brk
+F218: 00       brk
+F219: 00       brk
+F21A: 00       brk
+F21B: 00       brk
+F21C: 00       brk
+F21D: 00       brk
+F21E: 00       brk
+F21F: 00       brk
+F220: 02       kil
+F221: 02       kil
+F222: 02       kil
+F223: 02       kil
+F224: 02       kil
+F225: 02       kil
+F226: 00       brk
+F227: 00       brk
+F228: 00       brk
+F229: 00       brk
+F22A: 00       brk
+F22B: 00       brk
+F22C: 00       brk
+F22D: 00       brk
+F22E: 02       kil
+F22F: 02       kil
+F230: 22       kil
+F231: 22       kil
+F232: 22       kil
+F233: 72       kil
+F234: FA       nop
+F235: FA       nop
+F236: 70 20    bvs $f258
+F238: 00       brk
+F239: 20 20 20 jsr $2020
+F23C: 20 20 22 jsr $2220
+F23F: 22       kil
+F240: 00       brk
+F241: 00       brk
+F242: 00       brk
+F243: 00       brk
+F244: 00       brk
+F245: 00       brk
+F246: 00       brk
+F247: 00       brk
+F248: 00       brk
+F249: 00       brk
+F24A: 00       brk
+F24B: 00       brk
+F24C: 00       brk
+F24D: 00       brk
+F24E: 00       brk
+F24F: 00       brk
+F250: 00       brk
+F251: 00       brk
+F252: 00       brk
+F253: 00       brk
+F254: 00       brk
+F255: 00       brk
+F256: 00       brk
+F257: 00       brk
+F258: 00       brk
+F259: 00       brk
+F25A: 00       brk
+F25B: 00       brk
+F25C: 00       brk
+F25D: 00       brk
+F25E: 00       brk
+F25F: 00       brk
+F260: 88       dey
+F261: 88       dey
+F262: 88       dey
+F263: 9C BE BE shy $bebe, x
+F266: 1C 08 00 nop $0008, x
+F269: 08       php
+F26A: 08       php
+F26B: 08       php
+F26C: 08       php
+F26D: 08       php
+F26E: 88       dey
+F26F: 88       dey
+F270: 80 80    nop #$80
+F272: 80 80    nop #$80
+F274: 80 80    nop #$80
+F276: 00       brk
+F277: 00       brk
+F278: 00       brk
+F279: 00       brk
+F27A: 00       brk
+F27B: 00       brk
+F27C: 00       brk
+F27D: 00       brk
+F27E: 80 80    nop #$80
+F280: 00       brk
+F281: 00       brk
+F282: 00       brk
+F283: 00       brk
+F284: 00       brk
+F285: 00       brk
+F286: 00       brk
+F287: 00       brk
+F288: 00       brk
+F289: 00       brk
+F28A: 00       brk
+F28B: 00       brk
+F28C: 00       brk
+F28D: 00       brk
+F28E: 00       brk
+F28F: 00       brk
+F290: 22       kil
+F291: 22       kil
+F292: 22       kil
+F293: 27 2F    rla $2f
+F295: 2F 07 02 rla $0207
+F298: 00       brk
+F299: 02       kil
+F29A: 02       kil
+F29B: 02       kil
+F29C: 02       kil
+F29D: 02       kil
+F29E: 22       kil
+F29F: 22       kil
+F2A0: 20 20 20 jsr $2020
+F2A3: 20 A0 A0 jsr $a0a0
+F2A6: 00       brk
+F2A7: 00       brk
+F2A8: 00       brk
+F2A9: 00       brk
+F2AA: 00       brk
+F2AB: 00       brk
+F2AC: 00       brk
+F2AD: 00       brk
+F2AE: 20 20 08 jsr $0820
+F2B1: 08       php
+F2B2: 08       php
+F2B3: 09 0B    ora #$0b
+F2B5: 0B 01    anc #$01
+F2B7: 00       brk
+F2B8: 00       brk
+F2B9: 00       brk
+F2BA: 00       brk
+F2BB: 00       brk
+F2BC: 00       brk
+F2BD: 00       brk
+F2BE: 08       php
+F2BF: 08       php
+F2C0: 88       dey
+F2C1: 88       dey
+F2C2: 88       dey
+F2C3: C8       iny
+F2C4: E8       inx
+F2C5: E8       inx
+F2C6: C0 80    cpy #$80
+F2C8: 00       brk
+F2C9: 80 80    nop #$80
+F2CB: 80 80    nop #$80
+F2CD: 80 88    nop #$88
+F2CF: 88       dey
+F2D0: 01 00    ora ($00, x)
+F2D2: 00       brk
+F2D3: 00       brk
+F2D4: 00       brk
+F2D5: 00       brk
+F2D6: 00       brk
+F2D7: 00       brk
+F2D8: 08       php
+F2D9: 08       php
+F2DA: 08       php
+F2DB: 08       php
+F2DC: 08       php
+F2DD: 09 0B    ora #$0b
+F2DF: 0B 00    anc #$00
+F2E1: 00       brk
+F2E2: 00       brk
+F2E3: 00       brk
+F2E4: 00       brk
+F2E5: 00       brk
+F2E6: 00       brk
+F2E7: 00       brk
+F2E8: C0 80    cpy #$80
+F2EA: 00       brk
+F2EB: 00       brk
+F2EC: 00       brk
+F2ED: 00       brk
+F2EE: 00       brk
+F2EF: 00       brk
+F2F0: 88       dey
+F2F1: 88       dey
+F2F2: 88       dey
+F2F3: 88       dey
+F2F4: 88       dey
+F2F5: C8       iny
+F2F6: E8       inx
+F2F7: E8       inx
+F2F8: 00       brk
+F2F9: 00       brk
+F2FA: 00       brk
+F2FB: 80 80    nop #$80
+F2FD: 80 80    nop #$80
+F2FF: 80 0B    nop #$0b
+F301: 0B 01    anc #$01
+F303: 00       brk
+F304: 00       brk
+F305: 00       brk
+F306: 00       brk
+F307: 00       brk
+F308: 00       brk
+F309: 00       brk
+F30A: 08       php
+F30B: 08       php
+F30C: 08       php
+F30D: 08       php
+F30E: 08       php
+F30F: 09 00    ora #$00
+F311: 00       brk
+F312: 00       brk
+F313: 00       brk
+F314: 00       brk
+F315: 00       brk
+F316: 00       brk
+F317: 00       brk
+F318: E8       inx
+F319: E8       inx
+F31A: C0 80    cpy #$80
+F31C: 00       brk
+F31D: 00       brk
+F31E: 00       brk
+F31F: 00       brk
+F320: 80 80    nop #$80
+F322: 88       dey
+F323: 88       dey
+F324: 88       dey
+F325: 88       dey
+F326: 88       dey
+F327: C8       iny
+F328: 00       brk
+F329: 00       brk
+F32A: 00       brk
+F32B: 00       brk
+F32C: 00       brk
+F32D: 80 80    nop #$80
+F32F: 80 08    nop #$08
+F331: 09 0B    ora #$0b
+F333: 0B 01    anc #$01
+F335: 00       brk
+F336: 00       brk
+F337: 00       brk
+F338: 00       brk
+F339: 00       brk
+F33A: 00       brk
+F33B: 00       brk
+F33C: 08       php
+F33D: 08       php
+F33E: 08       php
+F33F: 08       php
+F340: 00       brk
+F341: 00       brk
+F342: 00       brk
+F343: 00       brk
+F344: 00       brk
+F345: 00       brk
+F346: 00       brk
+F347: 00       brk
+F348: 88       dey
+F349: C8       iny
+F34A: E8       inx
+F34B: E8       inx
+F34C: C0 80    cpy #$80
+F34E: 00       brk
+F34F: 00       brk
+F350: 80 80    nop #$80
+F352: 80 80    nop #$80
+F354: 88       dey
+F355: 88       dey
+F356: 88       dey
+F357: 88       dey
+F358: 00       brk
+F359: 00       brk
+F35A: 00       brk
+F35B: 00       brk
+F35C: 00       brk
+F35D: 00       brk
+F35E: 00       brk
+F35F: 80 02    nop #$02
+F361: 02       kil
+F362: 00       brk
+F363: 00       brk
+F364: 00       brk
+F365: 00       brk
+F366: 00       brk
+F367: 00       brk
+F368: 00       brk
+F369: 00       brk
+F36A: 02       kil
+F36B: 02       kil
+F36C: 02       kil
+F36D: 02       kil
+F36E: 02       kil
+F36F: 02       kil
+F370: 22       kil
+F371: 22       kil
+F372: 20 20 20 jsr $2020
+F375: 20 20 00 jsr $0020
+F378: 20 70 FA jsr $fa70
+F37B: FA       nop
+F37C: 72       kil
+F37D: 22       kil
+F37E: 22       kil
+F37F: 22       kil
+F380: 00       brk
+F381: 00       brk
+F382: 00       brk
+F383: 00       brk
+F384: 00       brk
+F385: 00       brk
+F386: 00       brk
+F387: 00       brk
+F388: 00       brk
+F389: 00       brk
+F38A: 00       brk
+F38B: 00       brk
+F38C: 00       brk
+F38D: 00       brk
+F38E: 00       brk
+F38F: 00       brk
+F390: 00       brk
+F391: 00       brk
+F392: 00       brk
+F393: 00       brk
+F394: 00       brk
+F395: 00       brk
+F396: 00       brk
+F397: 00       brk
+F398: 00       brk
+F399: 00       brk
+F39A: 00       brk
+F39B: 00       brk
+F39C: 00       brk
+F39D: 00       brk
+F39E: 00       brk
+F39F: 00       brk
+F3A0: 88       dey
+F3A1: 88       dey
+F3A2: 08       php
+F3A3: 08       php
+F3A4: 08       php
+F3A5: 08       php
+F3A6: 08       php
+F3A7: 00       brk
+F3A8: 08       php
+F3A9: 1C BE BE nop $bebe, x
+F3AC: 9C 88 88 shy $8888, x
+F3AF: 88       dey
+F3B0: 80 80    nop #$80
+F3B2: 00       brk
+F3B3: 00       brk
+F3B4: 00       brk
+F3B5: 00       brk
+F3B6: 00       brk
+F3B7: 00       brk
+F3B8: 00       brk
+F3B9: 00       brk
+F3BA: 00       brk
+F3BB: 00       brk
+F3BC: 80 80    nop #$80
+F3BE: 80 80    nop #$80
+F3C0: 00       brk
+F3C1: 00       brk
+F3C2: 00       brk
+F3C3: 00       brk
+F3C4: 00       brk
+F3C5: 00       brk
+F3C6: 00       brk
+F3C7: 00       brk
+F3C8: 00       brk
+F3C9: 00       brk
+F3CA: 00       brk
+F3CB: 00       brk
+F3CC: 00       brk
+F3CD: 00       brk
+F3CE: 00       brk
+F3CF: 00       brk
+F3D0: 22       kil
+F3D1: 22       kil
+F3D2: 02       kil
+F3D3: 02       kil
+F3D4: 02       kil
+F3D5: 02       kil
+F3D6: 02       kil
+F3D7: 00       brk
+F3D8: 02       kil
+F3D9: 07 2F    slo $2f
+F3DB: 2F 27 22 rla $2227
+F3DE: 22       kil
+F3DF: 22       kil
+F3E0: 20 20 00 jsr $0020
+F3E3: 00       brk
+F3E4: 00       brk
+F3E5: 00       brk
+F3E6: 00       brk
+F3E7: 00       brk
+F3E8: 00       brk
+F3E9: 00       brk
+F3EA: A0 A0    ldy #$a0
+F3EC: 20 20 20 jsr $2020
+F3EF: 20 08 08 jsr $0808
+F3F2: 00       brk
+F3F3: 00       brk
+F3F4: 00       brk
+F3F5: 00       brk
+F3F6: 00       brk
+F3F7: 00       brk
+F3F8: 00       brk
+F3F9: 01 0B    ora ($0b, x)
+F3FB: 0B 09    anc #$09
+F3FD: 08       php
+F3FE: 08       php
+F3FF: 08       php
+F400: 88       dey
+F401: 88       dey
+F402: 80 80    nop #$80
+F404: 80 80    nop #$80
+F406: 80 00    nop #$00
+F408: 80 C0    nop #$c0
+F40A: E8       inx
+F40B: E8       inx
+F40C: C8       iny
+F40D: 88       dey
+F40E: 88       dey
+F40F: F8       sed
+F410: 10 10    bpl $f422
+F412: 28       plp
+F413: 06 0B    asl $0b
+F415: 0F 0B 06 slo $060b
+F418: 10 00    bpl $f41a
+F41A: 48       pha
+F41B: 00       brk
+F41C: 30 20    bmi $f43e
+F41E: 08       php
+F41F: 40       rti
+F420: 00       brk
+F421: 00       brk
+F422: 00       brk
+F423: 00       brk
+F424: 00       brk
+F425: 02       kil
+F426: 00       brk
+F427: 0C 06 00 nop $0006
+F42A: 04 43    nop $43
+F42C: 90 00    bcc $f42e
+F42E: 00       brk
+F42F: 00       brk
+F430: 20 08 00 jsr $0008
+F433: 10 00    bpl $f435
+F435: 08       php
+F436: 02       kil
+F437: 00       brk
+F438: 00       brk
+F439: 00       brk
+F43A: 00       brk
+F43B: 00       brk
+F43C: 00       brk
+F43D: 00       brk
+F43E: 40       rti
+F43F: 20 80 00 jsr $0080
+F442: 50 40    bvc $f484
+F444: 20 08 04 jsr $0408
+F447: 10 08    bpl $f451
+F449: 00       brk
+F44A: 14 08    nop $08, x
+F44C: 00       brk
+F44D: 14 08    nop $08, x
+F44F: 20 00 40 jsr $4000
+F452: 00       brk
+F453: 00       brk
+F454: 00       brk
+F455: 00       brk
+F456: 00       brk
+F457: 00       brk
+F458: 00       brk
+F459: 00       brk
+F45A: 00       brk
+F45B: 06 02    asl $02
+F45D: 00       brk
+F45E: 00       brk
+F45F: 00       brk
+F460: 00       brk
+F461: 00       brk
+F462: 38       sec
+F463: 30 30    bmi $f495
+F465: 30 30    bmi $f497
+F467: 3F 00 00 rla $0000, x
+F46A: FE CC CC inc $cccc, x
+F46D: 0C 0C FC nop $fc0c
+F470: 00       brk
+F471: 00       brk
+F472: 3F 30 30 rla $3030, x
+F475: 30 30    bmi $f4a7
+F477: 3F 00 00 rla $0000, x
+F47A: FE 06 06 inc $0606, x
+F47D: 06 06    asl $06
+F47F: FE 00 00 inc $0000, x
+F482: 00       brk
+F483: 00       brk
+F484: 00       brk
+F485: 00       brk
+F486: 00       brk
+F487: 3F 00 00 rla $0000, x
+F48A: 06 06    asl $06
+F48C: 06 06    asl $06
+F48E: 06 FE    asl $fe
+F490: 00       brk
+F491: 00       brk
+F492: 1F 38 30 slo $3038, x
+F495: 30 30    bmi $f4c7
+F497: 3F 00 00 rla $0000, x
+F49A: FC 0E 06 nop $060e, x
+F49D: 06 06    asl $06
+F49F: FE 00 00 inc $0000, x
+F4A2: 31 31    and ($31), y
+F4A4: 31 31    and ($31), y
+F4A6: 31 3F    and ($3f), y
+F4A8: 00       brk
+F4A9: 00       brk
+F4AA: 86 86    stx $86
+F4AC: 86 86    stx $86
+F4AE: 86 FE    stx $fe
+F4B0: 00       brk
+F4B1: 00       brk
+F4B2: 3F 00 03 rla $0300, x
+F4B5: 1F 1F 3F slo $3f1f, x
+F4B8: 00       brk
+F4B9: 00       brk
+F4BA: FE FC F0 inc $f0fc, x
+F4BD: 80 80    nop #$80
+F4BF: FE 00 00 inc $0000, x
+F4C2: 38       sec
+F4C3: 30 30    bmi $f4f5
+F4C5: 30 30    bmi $f4f7
+F4C7: 3F 00 00 rla $0000, x
+F4CA: 0E 06 06 asl $0606
+F4CD: 06 06    asl $06
+F4CF: FE 00 00 inc $0000, x
+F4D2: 3F 00 00 rla $0000, x
+F4D5: 00       brk
+F4D6: 00       brk
+F4D7: 3F 00 00 rla $0000, x
+F4DA: FE 06 06 inc $0606, x
+F4DD: 06 06    asl $06
+F4DF: FE 00 00 inc $0000, x
+F4E2: 1E 3B 31 asl $313b, x
+F4E5: 31 31    and ($31), y
+F4E7: 3F 00 00 rla $0000, x
+F4EA: 7C CE 86 nop $86ce, x
+F4ED: 86 86    stx $86
+F4EF: FE 10 10 inc $1010, x
+F4F2: 10 10    bpl $f504
+F4F4: 10 10    bpl $f506
+F4F6: 10 10    bpl $f508
+F4F8: 2C 1A 2C bit $2c1a
+F4FB: 18       clc
+F4FC: 08       php
+F4FD: 08       php
+F4FE: 08       php
+F4FF: 00       brk
+F500: 00       brk
+F501: 00       brk
+F502: 00       brk
+F503: 00       brk
+F504: 00       brk
+F505: 00       brk
+F506: 03 07    slo ($07, x)
+F508: 00       brk
+F509: 00       brk
+F50A: 00       brk
+F50B: 00       brk
+F50C: 2E F8 E0 rol $e0f8
+F50F: E0 0F    cpx #$0f
+F511: 07 03    slo $03
+F513: 00       brk
+F514: 00       brk
+F515: 00       brk
+F516: 00       brk
+F517: 00       brk
+F518: 80 E0    nop #$e0
+F51A: E0 F8    cpx #$f8
+F51C: 2E 00 00 rol $0000
+F51F: 00       brk
+F520: 00       brk
+F521: 00       brk
+F522: 00       brk
+F523: 00       brk
+F524: 00       brk
+F525: 08       php
+F526: 1A       nop
+F527: 2C 10 10 bit $1010
+F52A: 10 10    bpl $f53c
+F52C: 00       brk
+F52D: 00       brk
+F52E: 00       brk
+F52F: 00       brk
+F530: 00       brk
+F531: 00       brk
+F532: 00       brk
+F533: 00       brk
+F534: 10 10    bpl $f546
+F536: 10 10    bpl $f548
+F538: 08       php
+F539: 08       php
+F53A: 08       php
+F53B: 00       brk
+F53C: 00       brk
+F53D: 00       brk
+F53E: 00       brk
+F53F: 00       brk
+F540: 00       brk
+F541: 00       brk
+F542: 08       php
+F543: 08       php
+F544: 2C 1A 2C bit $2c1a
+F547: 18       clc
+F548: 08       php
+F549: 08       php
+F54A: 00       brk
+F54B: 00       brk
+F54C: 00       brk
+F54D: 00       brk
+F54E: 00       brk
+F54F: 00       brk
+F550: 00       brk
+F551: 00       brk
+F552: 08       php
+F553: 1C 2A 1C nop $1c2a, x
+F556: 08       php
+F557: 08       php
+F558: 08       php
+F559: 00       brk
+F55A: 00       brk
+F55B: 00       brk
+F55C: 00       brk
+F55D: 00       brk
+F55E: 00       brk
+F55F: 00       brk
+F560: 00       brk
+F561: 08       php
+F562: 1A       nop
+F563: 2C 1A 0C bit $0c1a
+F566: 08       php
+F567: 08       php
+F568: 60       rts
+F569: 06 06    asl $06
+F56B: 00       brk
+F56C: 00       brk
+F56D: 01 01    ora ($01, x)
+F56F: 00       brk
+F570: 00       brk
+F571: 01 01    ora ($01, x)
+F573: 00       brk
+F574: 00       brk
+F575: 06 06    asl $06
+F577: 60       rts
+F578: 06 60    asl $60
+F57A: 60       rts
+F57B: 00       brk
+F57C: 00       brk
+F57D: 80 80    nop #$80
+F57F: 00       brk
+F580: 00       brk
+F581: 80 80    nop #$80
+F583: 00       brk
+F584: 00       brk
+F585: 60       rts
+F586: 60       rts
+F587: 06 00    asl $00
+F589: 00       brk
+F58A: 00       brk
+F58B: 00       brk
+F58C: 00       brk
+F58D: 60       rts
+F58E: 60       rts
+F58F: 00       brk
+F590: 00       brk
+F591: 00       brk
+F592: 00       brk
+F593: 00       brk
+F594: 00       brk
+F595: 00       brk
+F596: 00       brk
+F597: 00       brk
+F598: 00       brk
+F599: 00       brk
+F59A: 00       brk
+F59B: 00       brk
+F59C: 00       brk
+F59D: 00       brk
+F59E: 00       brk
+F59F: 00       brk
+F5A0: 00       brk
+F5A1: 60       rts
+F5A2: 60       rts
+F5A3: 00       brk
+F5A4: 00       brk
+F5A5: 00       brk
+F5A6: 00       brk
+F5A7: 00       brk
+F5A8: 00       brk
+F5A9: 00       brk
+F5AA: 00       brk
+F5AB: 00       brk
+F5AC: 00       brk
+F5AD: 00       brk
+F5AE: 00       brk
+F5AF: 00       brk
+F5B0: 00       brk
+F5B1: 00       brk
+F5B2: 00       brk
+F5B3: 00       brk
+F5B4: 00       brk
+F5B5: 00       brk
+F5B6: 00       brk
+F5B7: 00       brk
+F5B8: 00       brk
+F5B9: 00       brk
+F5BA: 00       brk
+F5BB: 00       brk
+F5BC: 00       brk
+F5BD: 00       brk
+F5BE: 00       brk
+F5BF: 00       brk
+F5C0: 00       brk
+F5C1: 00       brk
+F5C2: 00       brk
+F5C3: 00       brk
+F5C4: 00       brk
+F5C5: 00       brk
+F5C6: 00       brk
+F5C7: 00       brk
+F5C8: 00       brk
+F5C9: 00       brk
+F5CA: 00       brk
+F5CB: 00       brk
+F5CC: 00       brk
+F5CD: 06 06    asl $06
+F5CF: 00       brk
+F5D0: 00       brk
+F5D1: 00       brk
+F5D2: 00       brk
+F5D3: 00       brk
+F5D4: 00       brk
+F5D5: 00       brk
+F5D6: 00       brk
+F5D7: 00       brk
+F5D8: 00       brk
+F5D9: 00       brk
+F5DA: 00       brk
+F5DB: 00       brk
+F5DC: 00       brk
+F5DD: 00       brk
+F5DE: 00       brk
+F5DF: 00       brk
+F5E0: 00       brk
+F5E1: 06 06    asl $06
+F5E3: 00       brk
+F5E4: 00       brk
+F5E5: 00       brk
+F5E6: 00       brk
+F5E7: 00       brk
+F5E8: 00       brk
+F5E9: 00       brk
+F5EA: 00       brk
+F5EB: 00       brk
+F5EC: 00       brk
+F5ED: 18       clc
+F5EE: 18       clc
+F5EF: 00       brk
+F5F0: 60       rts
+F5F1: 00       brk
+F5F2: 00       brk
+F5F3: 00       brk
+F5F4: 00       brk
+F5F5: 00       brk
+F5F6: 00       brk
+F5F7: 00       brk
+F5F8: 00       brk
+F5F9: 00       brk
+F5FA: 00       brk
+F5FB: 00       brk
+F5FC: 00       brk
+F5FD: 00       brk
+F5FE: 00       brk
+F5FF: 60       rts
+F600: 00       brk
+F601: 18       clc
+F602: 18       clc
+F603: 00       brk
+F604: 00       brk
+F605: 00       brk
+F606: 00       brk
+F607: 00       brk
+F608: 00       brk
+F609: 06 06    asl $06
+F60B: 00       brk
+F60C: 00       brk
+F60D: 60       rts
+F60E: 60       rts
+F60F: 00       brk
+F610: 00       brk
+F611: 60       rts
+F612: 60       rts
+F613: 00       brk
+F614: 00       brk
+F615: 06 06    asl $06
+F617: 00       brk
+F618: 00       brk
+F619: 00       brk
+F61A: 00       brk
+F61B: 60       rts
+F61C: 60       rts
+F61D: 00       brk
+F61E: 00       brk
+F61F: 00       brk
+F620: 00       brk
+F621: 00       brk
+F622: 00       brk
+F623: 06 06    asl $06
+F625: 00       brk
+F626: 00       brk
+F627: 00       brk
+F628: 00       brk
+F629: 00       brk
+F62A: 00       brk
+F62B: 00       brk
+F62C: 00       brk
+F62D: 01 01    ora ($01, x)
+F62F: 00       brk
+F630: 00       brk
+F631: 01 01    ora ($01, x)
+F633: 00       brk
+F634: 00       brk
+F635: 00       brk
+F636: 00       brk
+F637: 00       brk
+F638: 00       brk
+F639: 00       brk
+F63A: 00       brk
+F63B: 00       brk
+F63C: 00       brk
+F63D: 08       php
+F63E: 08       php
+F63F: 00       brk
+F640: 00       brk
+F641: 80 80    nop #$80
+F643: 00       brk
+F644: 00       brk
+F645: 00       brk
+F646: 00       brk
+F647: 00       brk
+F648: 06 00    asl $00
+F64A: 00       brk
+F64B: 00       brk
+F64C: 00       brk
+F64D: 00       brk
+F64E: 00       brk
+F64F: 00       brk
+F650: 00       brk
+F651: 00       brk
+F652: 00       brk
+F653: 00       brk
+F654: 00       brk
+F655: 00       brk
+F656: 00       brk
+F657: 06 02    asl $02
+F659: 02       kil
+F65A: 7C 00 32 nop $3200, x
+F65D: 4C 48 7E jmp $7e48
+F660: 00       brk
+F661: 00       brk
+F662: 2C 52 52 bit $5252
+F665: 7E 00 7C ror $7c00, x
+F668: 7E 00 52 ror $5200, x
+F66B: 52       kil
+F66C: 52       kil
+F66D: 7E 00 00 ror $0000, x
+F670: 3C 42 42 nop $4242, x
+F673: 7E 00 7E ror $7e00, x
+F676: 0C 30 10 nop $1030
+F679: 00       brk
+F67A: 00       brk
+F67B: 08       php
+F67C: 10 60    bpl $f6de
+F67E: 00       brk
+F67F: 00       brk
+F680: 04 02    nop $02
+F682: 01 00    ora ($00, x)
+F684: 80 8E    nop #$8e
+F686: 45 20    eor $20
+F688: 81 02    sta ($02, x)
+F68A: 04 00    nop $00
+F68C: 20 10 00 jsr $0010
+F68F: 00       brk
+F690: 00       brk
+F691: 00       brk
+F692: 00       brk
+F693: 81 02    sta ($02, x)
+F695: 04 00    nop $00
+F697: 01 01    ora ($01, x)
+F699: 01 01    ora ($01, x)
+F69B: 01 01    ora ($01, x)
+F69D: 01 01    ora ($01, x)
+F69F: 01 01    ora ($01, x)
+F6A1: 01 01    ora ($01, x)
+F6A3: 19 19 01 ora $0119, y
+F6A6: 01 01    ora ($01, x)
+F6A8: 80 80    nop #$80
+F6AA: 80 80    nop #$80
+F6AC: 80 80    nop #$80
+F6AE: 80 80    nop #$80
+F6B0: 80 80    nop #$80
+F6B2: 80 98    nop #$98
+F6B4: 98       tya
+F6B5: 80 80    nop #$80
+F6B7: 80 00    nop #$00
+F6B9: 00       brk
+F6BA: 00       brk
+F6BB: 00       brk
+F6BC: 00       brk
+F6BD: 00       brk
+F6BE: 00       brk
+F6BF: 00       brk
+F6C0: 00       brk
+F6C1: 00       brk
+F6C2: 00       brk
+F6C3: 18       clc
+F6C4: 18       clc
+F6C5: 00       brk
+F6C6: 00       brk
+F6C7: 00       brk
+F6C8: C0 60    cpy #$60
+F6CA: 30 18    bmi $f6e4
+F6CC: 0C 06 03 nop $0306
+F6CF: 01 01    ora ($01, x)
+F6D1: 03 06    slo ($06, x)
+F6D3: 0C 18 30 nop $3018
+F6D6: 60       rts
+F6D7: C0 FF    cpy #$ff
+F6D9: 00       brk
+F6DA: 00       brk
+F6DB: 00       brk
+F6DC: 00       brk
+F6DD: 00       brk
+F6DE: 00       brk
+F6DF: 00       brk
+F6E0: 00       brk
+F6E1: 00       brk
+F6E2: 00       brk
+F6E3: 00       brk
+F6E4: 00       brk
+F6E5: 00       brk
+F6E6: 00       brk
+F6E7: FF FF FF isb $ffff, x
+F6EA: FF FF FF isb $ffff, x
+F6ED: FF FF FF isb $ffff, x
+F6F0: FF FF FF isb $ffff, x
+F6F3: FF FF FF isb $ffff, x
+F6F6: FF FF FF isb $ffff, x
+F6F9: FF FF FF isb $ffff, x
+F6FC: FF FF FF isb $ffff, x
+F6FF: FF FF FF isb $ffff, x
+F702: FF FF FF isb $ffff, x
+F705: FF FF FF isb $ffff, x
+F708: FF FF FF isb $ffff, x
+F70B: FF FF FF isb $ffff, x
+F70E: FF FF C3 isb $c3ff, x
+F711: C3 C3    dcp ($c3, x)
+F713: C3 C3    dcp ($c3, x)
+F715: C3 C3    dcp ($c3, x)
+F717: C3 C3    dcp ($c3, x)
+F719: C3 C3    dcp ($c3, x)
+F71B: C3 C3    dcp ($c3, x)
+F71D: C3 FF    dcp ($ff, x)
+F71F: FF C3 C3 isb $c3c3, x
+F722: C3 C3    dcp ($c3, x)
+F724: FF FF FF isb $ffff, x
+F727: FF C3 C3 isb $c3c3, x
+F72A: FF FF FF isb $ffff, x
+F72D: FF FF FF isb $ffff, x
+F730: FF FF FF isb $ffff, x
+F733: FF FF FF isb $ffff, x
+F736: FF FF 00 isb $00ff, x
+F739: 3F 3F 3F rla $3f3f, x
+F73C: 3A       nop
+F73D: 3B 38 38 rla $3838, y
+F740: 31 17    and ($17), y
+F742: E1 FE    sbc ($fe, x)
+F744: FF FF FF isb $ffff, x
+F747: 7F 90 C8 rra $c890, x
+F74A: FC 3D C7 nop $c73d, x
+F74D: F8       sed
+F74E: FF FF 38 isb $38ff, x
+F751: 39 3A 38 and $383a, y
+F754: 38       sec
+F755: 3F 3F 3F rla $3f3f, x
+F758: FF FF 7F isb $7fff, x
+F75B: 7F 1F DF rra $df1f, x
+F75E: D3 D0    dcp ($d0), y
+F760: FF FE FC isb $fcfe, x
+F763: FD FD 86 sbc $86fd, x
+F766: C0 F0    cpy #$f0
+F768: FF FF FF isb $ffff, x
+F76B: FF FF FF isb $ffff, x
+F76E: FF FF FF isb $ffff, x
+F771: FF FF FF isb $ffff, x
+F774: FF FF FF isb $ffff, x
+F777: FF FF FF isb $ffff, x
+F77A: FF FF FF isb $ffff, x
+F77D: FF FF FF isb $ffff, x
+F780: FF FF FF isb $ffff, x
+F783: FF FF FF isb $ffff, x
+F786: FF FF FF isb $ffff, x
+F789: FF FF FF isb $ffff, x
+F78C: FF FF FF isb $ffff, x
+F78F: FF FF FF isb $ffff, x
+F792: FF FF FF isb $ffff, x
+F795: FF FF FF isb $ffff, x
+F798: FF FF FF isb $ffff, x
+F79B: FF FF FF isb $ffff, x
+F79E: FF FF FF isb $ffff, x
+F7A1: FF FF FF isb $ffff, x
+F7A4: FF FF FF isb $ffff, x
+F7A7: FF FF FF isb $ffff, x
+F7AA: FF FF FF isb $ffff, x
+F7AD: FF FF FF isb $ffff, x
+F7B0: FF FF FF isb $ffff, x
+F7B3: FF FF FF isb $ffff, x
+F7B6: FF FF FF isb $ffff, x
+F7B9: FF FF FF isb $ffff, x
+F7BC: FF FF FF isb $ffff, x
+F7BF: FF FF FF isb $ffff, x
+F7C2: FF FF FF isb $ffff, x
+F7C5: FF FF FF isb $ffff, x
+F7C8: FF FF FF isb $ffff, x
+F7CB: FF FF FF isb $ffff, x
+F7CE: FF FF 00 isb $00ff, x
+F7D1: 00       brk
+F7D2: 00       brk
+F7D3: 00       brk
+F7D4: 06 0E    asl $0e
+F7D6: 0C 0C 0C nop $0c0c
+F7D9: 0C 0E 07 nop $070e
+F7DC: 03 00    slo ($00, x)
+F7DE: 00       brk
+F7DF: 00       brk
+F7E0: 00       brk
+F7E1: 00       brk
+F7E2: 00       brk
+F7E3: 00       brk
+F7E4: 60       rts
+F7E5: 70 30    bvs $f817
+F7E7: 30 30    bmi $f819
+F7E9: 30 70    bmi $f85b
+F7EB: E0 C0    cpx #$c0
+F7ED: 00       brk
+F7EE: 00       brk
+F7EF: 00       brk
+F7F0: 00       brk
+F7F1: 07 0E    slo $0e
+F7F3: 3E 38 3E rol $3e38, x
+F7F6: 0E 07 FF asl $ff07
+F7F9: FF FF FF isb $ffff, x
+F7FC: FF FF FF isb $ffff, x
+F7FF: FF 38 7C isb $7c38, x
+F802: C2 82    nop #$82
+F804: 86 7C    stx $7c
+F806: 38       sec
+F807: 00       brk
+F808: 02       kil
+F809: 02       kil
+F80A: FE FE 42 inc $42fe, x
+F80D: 02       kil
+F80E: 00       brk
+F80F: 00       brk
+F810: 62       kil
+F811: F2       kil
+F812: BA       tsx
+F813: 9A       txs
+F814: 9E CE 46 shx $46ce, y
+F817: 00       brk
+F818: 8C DE F2 sty $f2de
+F81B: B2       kil
+F81C: 92       kil
+F81D: 86 04    stx $04
+F81F: 00       brk
+F820: 08       php
+F821: FE FE C8 inc $c8fe, x
+F824: 68       pla
+F825: 38       sec
+F826: 18       clc
+F827: 00       brk
+F828: 1C BE A2 nop $a2be, x
+F82B: A2 A2    ldx #$a2
+F82D: E6 E4    inc $e4
+F82F: 00       brk
+F830: 0C 9E 92 nop $929e
+F833: 92       kil
+F834: D2       kil
+F835: 7E 3C 00 ror $003c, x
+F838: C0 E0    cpy #$e0
+F83A: B0 9E    bcs $f7da
+F83C: 8E C0 C0 stx $c0c0
+F83F: 00       brk
+F840: 0C 6E 9A nop $9a6e
+F843: 9A       txs
+F844: B2       kil
+F845: F2       kil
+F846: 6C 00 78 jmp ($7800)
+F849: FC 96 92 nop $9296, x
+F84C: 92       kil
+F84D: F2       kil
+F84E: 60       rts
+F84F: 00       brk
+F850: 3E 7E C8 rol $c87e, x
+F853: 88       dey
+F854: C8       iny
+F855: 7E 3E 00 ror $003e, x
+F858: 6C FE 92 jmp ($92fe)
+F85B: 92       kil
+F85C: 92       kil
+F85D: FE FE 00 inc $00fe, x
+F860: 44 C6    nop $c6
+F862: 82 82    nop #$82
+F864: C6 7C    dec $7c
+F866: 38       sec
+F867: 00       brk
+F868: 38       sec
+F869: 7C C6 82 nop $82c6, x
+F86C: 82 FE    nop #$fe
+F86E: FE 00 82 inc $8200, x
+F871: 92       kil
+F872: 92       kil
+F873: 92       kil
+F874: FE FE 00 inc $00fe, x
+F877: 00       brk
+F878: 80 90    nop #$90
+F87A: 90 90    bcc $f80c
+F87C: 90 FE    bcc $f87c
+F87E: FE 00 9E inc $9e00, x
+F881: 9E 92 82 shx $8292, y
+F884: C6 7C    dec $7c
+F886: 38       sec
+F887: 00       brk
+F888: FE FE 10 inc $10fe, x
+F88B: 10 10    bpl $f89d
+F88D: FE FE 00 inc $00fe, x
+F890: 82 82    nop #$82
+F892: FE FE 82 inc $82fe, x
+F895: 82 00    nop #$00
+F897: 00       brk
+F898: FC FE 02 nop $02fe, x
+F89B: 02       kil
+F89C: 02       kil
+F89D: 06 04    asl $04
+F89F: 00       brk
+F8A0: 82 C6    nop #$c6
+F8A2: 6E 3C 18 ror $183c
+F8A5: FE FE 00 inc $00fe, x
+F8A8: 02       kil
+F8A9: 02       kil
+F8AA: 02       kil
+F8AB: 02       kil
+F8AC: FE FE 00 inc $00fe, x
+F8AF: 00       brk
+F8B0: FE FE 70 inc $70fe, x
+F8B3: 38       sec
+F8B4: 70 FE    bvs $f8b4
+F8B6: FE 00 FE inc $fe00, x
+F8B9: FE 1C 38 inc $381c, x
+F8BC: 70 FE    bvs $f8bc
+F8BE: FE 00 7C inc $7c00, x
+F8C1: FE 82 82 inc $8282, x
+F8C4: 82 FE    nop #$fe
+F8C6: 7C 00 70 nop $7000, x
+F8C9: F8       sed
+F8CA: 88       dey
+F8CB: 88       dey
+F8CC: 88       dey
+F8CD: FE FE 00 inc $00fe, x
+F8D0: 7A       nop
+F8D1: FC 8E 8A nop $8a8e, x
+F8D4: 82 FE    nop #$fe
+F8D6: 7C 00 72 nop $7200, x
+F8D9: F6 9E    inc $9e, x
+F8DB: 8C 88 FE sty $fe88
+F8DE: FE 00 0C inc $0c00, x
+F8E1: 5E D2 92 lsr $92d2, x
+F8E4: 92       kil
+F8E5: F6 64    inc $64, x
+F8E7: 00       brk
+F8E8: 80 80    nop #$80
+F8EA: FE FE 80 inc $80fe, x
+F8ED: 80 00    nop #$00
+F8EF: 00       brk
+F8F0: FC FE 02 nop $02fe, x
+F8F3: 02       kil
+F8F4: 02       kil
+F8F5: FE FC 00 inc $00fc, x
+F8F8: F0 F8    beq $f8f2
+F8FA: 1C 0E 1C nop $1c0e, x
+F8FD: F8       sed
+F8FE: F0 00    beq $f900
+F900: F8       sed
+F901: FE 1C 38 inc $381c, x
+F904: 1C FE F8 nop $f8fe, x
+F907: 00       brk
+F908: C6 EE    dec $ee
+F90A: 7C 38 7C nop $7c38, x
+F90D: EE C6 00 inc $00c6
+F910: C0 F0    cpy #$f0
+F912: 1E 1E F0 asl $f01e, x
+F915: C0 00    cpy #$00
+F917: 00       brk
+F918: C2 E2    nop #$e2
+F91A: F2       kil
+F91B: BA       tsx
+F91C: 9E 8E 86 shx $868e, y
+F91F: 00       brk
+F920: 00       brk
+F921: 00       brk
+F922: 00       brk
+F923: 00       brk
+F924: E0 D0    cpx #$d0
+F926: 00       brk
+F927: 00       brk
+F928: 00       brk
+F929: 18       clc
+F92A: 18       clc
+F92B: 18       clc
+F92C: 18       clc
+F92D: 18       clc
+F92E: 00       brk
+F92F: 00       brk
+F930: 00       brk
+F931: 00       brk
+F932: 00       brk
+F933: 00       brk
+F934: 06 06    asl $06
+F936: 00       brk
+F937: 00       brk
+F938: 82 82    nop #$82
+F93A: 7C 00 4C nop $4c00, x
+F93D: 92       kil
+F93E: 92       kil
+F93F: 64 FE    nop $fe
+F941: 00       brk
+F942: 7C 82 82 nop $8282, x
+F945: 7C 00 44 nop $4400, x
+F948: 92       kil
+F949: 92       kil
+F94A: FE 00 00 inc $0000, x
+F94D: 6E 90 90 ror $9090
+F950: 82 82    nop #$82
+F952: 7C 00 44 nop $4400, x
+F955: 82 82    nop #$82
+F957: 7C FE 18 nop $18fe, x
+F95A: 30 FE    bmi $f95a
+F95C: 00       brk
+F95D: FE 00 7C inc $7c00, x
+F960: 82 82    nop #$82
+F962: 7C 00 6E nop $6e00, x
+F965: 90 90    bcc $f8f7
+F967: FE FE 00 inc $00fe, x
+F96A: FC 02 02 nop $0202, x
+F96D: FC 00 7C nop $7c00, x
+F970: 7C 82 82 nop $8282, x
+F973: FE 00 FE inc $fe00, x
+F976: 18       clc
+F977: 30 00    bmi $f979
+F979: FE 00 00 inc $0000, x
+F97C: FE 10 10 inc $1010, x
+F97F: FE 00 00 inc $0000, x
+F982: 00       brk
+F983: 00       brk
+F984: 00       brk
+F985: 00       brk
+F986: 00       brk
+F987: 00       brk
+F988: 00       brk
+F989: 00       brk
+F98A: 00       brk
+F98B: 00       brk
+F98C: F0 00    beq $f98e
+F98E: 00       brk
+F98F: 00       brk
+F990: 00       brk
+F991: 00       brk
+F992: 00       brk
+F993: 00       brk
+F994: 33 00    rla ($00), y
+F996: 00       brk
+F997: 00       brk
+F998: 00       brk
+F999: 00       brk
+F99A: 00       brk
+F99B: 00       brk
+F99C: 0F 00 00 slo $0000
+F99F: 00       brk
+F9A0: 00       brk
+F9A1: 00       brk
+F9A2: 00       brk
+F9A3: 00       brk
+F9A4: 10 10    bpl $f9b6
+F9A6: 10 10    bpl $f9b8
+F9A8: 00       brk
+F9A9: 00       brk
+F9AA: 10 10    bpl $f9bc
+F9AC: 00       brk
+F9AD: 00       brk
+F9AE: 10 10    bpl $f9c0
+F9B0: 10 10    bpl $f9c2
+F9B2: 10 10    bpl $f9c4
+F9B4: 00       brk
+F9B5: 00       brk
+F9B6: 00       brk
+F9B7: 00       brk
+F9B8: FF FF FF isb $ffff, x
+F9BB: FF FF FF isb $ffff, x
+F9BE: FF FF FF isb $ffff, x
+F9C1: FF FF FF isb $ffff, x
+F9C4: FF FF FF isb $ffff, x
+F9C7: FF 00 00 isb $0000, x
+F9CA: 00       brk
+F9CB: 00       brk
+F9CC: 00       brk
+F9CD: 00       brk
+F9CE: 00       brk
+F9CF: 00       brk
+F9D0: FF FF FF isb $ffff, x
+F9D3: FF FF FF isb $ffff, x
+F9D6: FF FF 00 isb $00ff, x
+F9D9: 00       brk
+F9DA: 00       brk
+F9DB: 00       brk
+F9DC: 00       brk
+F9DD: 00       brk
+F9DE: 00       brk
+F9DF: 00       brk
+F9E0: 00       brk
+F9E1: 00       brk
+F9E2: 00       brk
+F9E3: 00       brk
+F9E4: 10 10    bpl $f9f6
+F9E6: 10 38    bpl $fa20
+F9E8: 00       brk
+F9E9: 00       brk
+F9EA: 00       brk
+F9EB: 00       brk
+F9EC: 00       brk
+F9ED: 00       brk
+F9EE: 00       brk
+F9EF: 00       brk
+F9F0: 00       brk
+F9F1: 00       brk
+F9F2: 00       brk
+F9F3: 00       brk
+F9F4: 00       brk
+F9F5: 00       brk
+F9F6: 00       brk
+F9F7: 03 38    slo ($38, x)
+F9F9: 38       sec
+F9FA: 6C 44 44 jmp ($4444)
+F9FD: 82 D6    nop #$d6
+F9FF: FF 00 00 isb $0000, x
+FA02: 00       brk
+FA03: 00       brk
+FA04: 00       brk
+FA05: 00       brk
+FA06: 00       brk
+FA07: 80 01    nop #$01
+FA09: 01 01    ora ($01, x)
+FA0B: 00       brk
+FA0C: 00       brk
+FA0D: 00       brk
+FA0E: 00       brk
+FA0F: 00       brk
+FA10: BB 11 11 las $1111, y
+FA13: 00       brk
+FA14: 00       brk
+FA15: 00       brk
+FA16: 00       brk
+FA17: 00       brk
+FA18: 00       brk
+FA19: 00       brk
+FA1A: 00       brk
+FA1B: 00       brk
+FA1C: 00       brk
+FA1D: 00       brk
+FA1E: 00       brk
+FA1F: 00       brk
+FA20: 03 02    slo ($02, x)
+FA22: 02       kil
+FA23: 02       kil
+FA24: 02       kil
+FA25: 02       kil
+FA26: 00       brk
+FA27: 00       brk
+FA28: 00       brk
+FA29: 00       brk
+FA2A: 00       brk
+FA2B: 00       brk
+FA2C: 00       brk
+FA2D: 00       brk
+FA2E: 02       kil
+FA2F: 02       kil
+FA30: DE 02 02 dec $0202, x
+FA33: 52       kil
+FA34: FA       nop
+FA35: FA       nop
+FA36: 70 20    bvs $fa58
+FA38: 88       dey
+FA39: 88       dey
+FA3A: D8       cld
+FA3B: D8       cld
+FA3C: 50 00    bvc $fa3e
+FA3E: 02       kil
+FA3F: 02       kil
+FA40: 00       brk
+FA41: 00       brk
+FA42: 00       brk
+FA43: 00       brk
+FA44: 00       brk
+FA45: 00       brk
+FA46: 00       brk
+FA47: 00       brk
+FA48: 00       brk
+FA49: 00       brk
+FA4A: 00       brk
+FA4B: 00       brk
+FA4C: 00       brk
+FA4D: 00       brk
+FA4E: 00       brk
+FA4F: 00       brk
+FA50: 00       brk
+FA51: 00       brk
+FA52: 00       brk
+FA53: 00       brk
+FA54: 00       brk
+FA55: 00       brk
+FA56: 00       brk
+FA57: 00       brk
+FA58: 00       brk
+FA59: 00       brk
+FA5A: 00       brk
+FA5B: 00       brk
+FA5C: 00       brk
+FA5D: 00       brk
+FA5E: 00       brk
+FA5F: 00       brk
+FA60: F7 80    isb $80, x
+FA62: 80 94    nop #$94
+FA64: BE BE 1C ldx $1cbe, y
+FA67: 08       php
+FA68: 22       kil
+FA69: 22       kil
+FA6A: 36 36    rol $36, x
+FA6C: 14 00    nop $00, x
+FA6E: 80 80    nop #$80
+FA70: 80 80    nop #$80
+FA72: 80 80    nop #$80
+FA74: 80 80    nop #$80
+FA76: 00       brk
+FA77: 00       brk
+FA78: 00       brk
+FA79: 00       brk
+FA7A: 00       brk
+FA7B: 00       brk
+FA7C: 00       brk
+FA7D: 00       brk
+FA7E: 80 80    nop #$80
+FA80: 00       brk
+FA81: 00       brk
+FA82: 00       brk
+FA83: 00       brk
+FA84: 00       brk
+FA85: 00       brk
+FA86: 00       brk
+FA87: 00       brk
+FA88: 00       brk
+FA89: 00       brk
+FA8A: 00       brk
+FA8B: 00       brk
+FA8C: 00       brk
+FA8D: 00       brk
+FA8E: 00       brk
+FA8F: 00       brk
+FA90: 3D 20 20 and $2020, x
+FA93: 25 2F    and $2f
+FA95: 2F 07 02 rla $0207
+FA98: 08       php
+FA99: 08       php
+FA9A: 0D 0D 05 ora $050d
+FA9D: 00       brk
+FA9E: 20 20 E0 jsr $e020
+FAA1: 20 20 20 jsr $2020
+FAA4: A0 A0    ldy #$a0
+FAA6: 00       brk
+FAA7: 00       brk
+FAA8: 80 80    nop #$80
+FAAA: 80 80    nop #$80
+FAAC: 00       brk
+FAAD: 00       brk
+FAAE: 20 20 0F jsr $0f20
+FAB1: 08       php
+FAB2: 08       php
+FAB3: 09 0B    ora #$0b
+FAB5: 0B 01    anc #$01
+FAB7: 00       brk
+FAB8: 02       kil
+FAB9: 02       kil
+FABA: 03 03    slo ($03, x)
+FABC: 01 00    ora ($00, x)
+FABE: 08       php
+FABF: 08       php
+FAC0: 78       sei
+FAC1: 08       php
+FAC2: 08       php
+FAC3: 48       pha
+FAC4: E8       inx
+FAC5: E8       inx
+FAC6: C0 80    cpy #$80
+FAC8: 20 20 60 jsr $6020
+FACB: 60       rts
+FACC: 40       rti
+FACD: 00       brk
+FACE: 08       php
+FACF: 08       php
+FAD0: 01 00    ora ($00, x)
+FAD2: 00       brk
+FAD3: 00       brk
+FAD4: 00       brk
+FAD5: 00       brk
+FAD6: 00       brk
+FAD7: 00       brk
+FAD8: 08       php
+FAD9: 08       php
+FADA: 0F 08 08 slo $0808
+FADD: 09 0B    ora #$0b
+FADF: 0B 00    anc #$00
+FAE1: 00       brk
+FAE2: 02       kil
+FAE3: 02       kil
+FAE4: 03 03    slo ($03, x)
+FAE6: 01 00    ora ($00, x)
+FAE8: C0 80    cpy #$80
+FAEA: 00       brk
+FAEB: 00       brk
+FAEC: 00       brk
+FAED: 00       brk
+FAEE: 00       brk
+FAEF: 00       brk
+FAF0: 08       php
+FAF1: 08       php
+FAF2: 78       sei
+FAF3: 08       php
+FAF4: 08       php
+FAF5: 48       pha
+FAF6: E8       inx
+FAF7: E8       inx
+FAF8: 00       brk
+FAF9: 00       brk
+FAFA: 20 20 60 jsr $6020
+FAFD: 60       rts
+FAFE: 40       rti
+FAFF: 00       brk
+FB00: 0B 0B    anc #$0b
+FB02: 01 00    ora ($00, x)
+FB04: 00       brk
+FB05: 00       brk
+FB06: 00       brk
+FB07: 00       brk
+FB08: 01 00    ora ($00, x)
+FB0A: 08       php
+FB0B: 08       php
+FB0C: 0F 08 08 slo $0808
+FB0F: 09 00    ora #$00
+FB11: 00       brk
+FB12: 00       brk
+FB13: 00       brk
+FB14: 02       kil
+FB15: 02       kil
+FB16: 03 03    slo ($03, x)
+FB18: E8       inx
+FB19: E8       inx
+FB1A: C0 80    cpy #$80
+FB1C: 00       brk
+FB1D: 00       brk
+FB1E: 00       brk
+FB1F: 00       brk
+FB20: 40       rti
+FB21: 00       brk
+FB22: 08       php
+FB23: 08       php
+FB24: 78       sei
+FB25: 08       php
+FB26: 08       php
+FB27: 48       pha
+FB28: 00       brk
+FB29: 00       brk
+FB2A: 00       brk
+FB2B: 00       brk
+FB2C: 20 20 60 jsr $6020
+FB2F: 60       rts
+FB30: 08       php
+FB31: 09 0B    ora #$0b
+FB33: 0B 01    anc #$01
+FB35: 00       brk
+FB36: 00       brk
+FB37: 00       brk
+FB38: 03 03    slo ($03, x)
+FB3A: 01 00    ora ($00, x)
+FB3C: 08       php
+FB3D: 08       php
+FB3E: 0F 08 00 slo $0008
+FB41: 00       brk
+FB42: 00       brk
+FB43: 00       brk
+FB44: 00       brk
+FB45: 00       brk
+FB46: 02       kil
+FB47: 02       kil
+FB48: 08       php
+FB49: 48       pha
+FB4A: E8       inx
+FB4B: E8       inx
+FB4C: C0 80    cpy #$80
+FB4E: 00       brk
+FB4F: 00       brk
+FB50: 60       rts
+FB51: 60       rts
+FB52: 40       rti
+FB53: 00       brk
+FB54: 08       php
+FB55: 08       php
+FB56: 78       sei
+FB57: 08       php
+FB58: 00       brk
+FB59: 00       brk
+FB5A: 00       brk
+FB5B: 00       brk
+FB5C: 00       brk
+FB5D: 00       brk
+FB5E: 20 20 02 jsr $0220
+FB61: 02       kil
+FB62: 00       brk
+FB63: 00       brk
+FB64: 00       brk
+FB65: 00       brk
+FB66: 00       brk
+FB67: 00       brk
+FB68: 00       brk
+FB69: 00       brk
+FB6A: 02       kil
+FB6B: 02       kil
+FB6C: 02       kil
+FB6D: 02       kil
+FB6E: 02       kil
+FB6F: 03 02    slo ($02, x)
+FB71: 02       kil
+FB72: 00       brk
+FB73: 50 D8    bvc $fb4d
+FB75: D8       cld
+FB76: 88       dey
+FB77: 88       dey
+FB78: 20 70 FA jsr $fa70
+FB7B: FA       nop
+FB7C: 52       kil
+FB7D: 02       kil
+FB7E: 02       kil
+FB7F: DE 00 00 dec $0000, x
+FB82: 00       brk
+FB83: 00       brk
+FB84: 00       brk
+FB85: 00       brk
+FB86: 00       brk
+FB87: 00       brk
+FB88: 00       brk
+FB89: 00       brk
+FB8A: 00       brk
+FB8B: 00       brk
+FB8C: 00       brk
+FB8D: 00       brk
+FB8E: 00       brk
+FB8F: 00       brk
+FB90: 00       brk
+FB91: 00       brk
+FB92: 00       brk
+FB93: 00       brk
+FB94: 00       brk
+FB95: 00       brk
+FB96: 00       brk
+FB97: 00       brk
+FB98: 00       brk
+FB99: 00       brk
+FB9A: 00       brk
+FB9B: 00       brk
+FB9C: 00       brk
+FB9D: 00       brk
+FB9E: 00       brk
+FB9F: 00       brk
+FBA0: 80 80    nop #$80
+FBA2: 00       brk
+FBA3: 14 36    nop $36, x
+FBA5: 36 22    rol $22, x
+FBA7: 22       kil
+FBA8: 08       php
+FBA9: 1C BE BE nop $bebe, x
+FBAC: 94 80    sty $80, x
+FBAE: 80 F7    nop #$f7
+FBB0: 80 80    nop #$80
+FBB2: 80 80    nop #$80
+FBB4: 00       brk
+FBB5: 00       brk
+FBB6: 00       brk
+FBB7: 00       brk
+FBB8: 00       brk
+FBB9: 00       brk
+FBBA: 80 80    nop #$80
+FBBC: 80 80    nop #$80
+FBBE: 80 80    nop #$80
+FBC0: 00       brk
+FBC1: 00       brk
+FBC2: 00       brk
+FBC3: 00       brk
+FBC4: 00       brk
+FBC5: 00       brk
+FBC6: 00       brk
+FBC7: 00       brk
+FBC8: 00       brk
+FBC9: 00       brk
+FBCA: 00       brk
+FBCB: 00       brk
+FBCC: 00       brk
+FBCD: 00       brk
+FBCE: 00       brk
+FBCF: 00       brk
+FBD0: 20 20 00 jsr $0020
+FBD3: 05 0D    ora $0d
+FBD5: 0D 08 08 ora $0808
+FBD8: 02       kil
+FBD9: 07 2F    slo $2f
+FBDB: 2F 25 20 rla $2025
+FBDE: 20 3D 20 jsr $203d
+FBE1: 20 00 00 jsr $0000
+FBE4: 80 80    nop #$80
+FBE6: 80 80    nop #$80
+FBE8: 00       brk
+FBE9: 00       brk
+FBEA: A0 A0    ldy #$a0
+FBEC: 20 20 20 jsr $2020
+FBEF: E0 08    cpx #$08
+FBF1: 08       php
+FBF2: 00       brk
+FBF3: 01 03    ora ($03, x)
+FBF5: 03 02    slo ($02, x)
+FBF7: 02       kil
+FBF8: 00       brk
+FBF9: 01 0B    ora ($0b, x)
+FBFB: 0B 09    anc #$09
+FBFD: 08       php
+FBFE: 08       php
+FBFF: 0F 08 08 slo $0808
+FC02: 00       brk
+FC03: 40       rti
+FC04: 60       rts
+FC05: 60       rts
+FC06: 20 20 80 jsr $8020
+FC09: C0 E8    cpy #$e8
+FC0B: E8       inx
+FC0C: 48       pha
+FC0D: 08       php
+FC0E: 08       php
+FC0F: 78       sei
+FC10: 68       pla
+FC11: 6C 54 38 jmp ($3854)
+FC14: 31 11    and ($11), y
+FC16: 01 00    ora ($00, x)
+FC18: 2C 7C 34 bit $347c
+FC1B: 78       sei
+FC1C: 48       pha
+FC1D: 58       cli
+FC1E: 70 38    bvs $fc58
+FC20: 00       brk
+FC21: 00       brk
+FC22: 00       brk
+FC23: 03 03    slo ($03, x)
+FC25: 0D 1F 32 ora $321f
+FC28: 19 7F FB ora $fb7f, y
+FC2B: BC 60 80 ldy $8060, x
+FC2E: 00       brk
+FC2F: 00       brk
+FC30: D0 F4    bne $fc26
+FC32: FE EF 7F inc $7fef, x
+FC35: 17 01    slo $01, x
+FC37: 00       brk
+FC38: 00       brk
+FC39: 00       brk
+FC3A: 00       brk
+FC3B: 80 C0    nop #$c0
+FC3D: C0 B0    cpy #$b0
+FC3F: D0 70    bne $fcb1
+FC41: 78       sei
+FC42: 28       plp
+FC43: 38       sec
+FC44: 1C 34 38 nop $3834, x
+FC47: 0C 14 1C nop $1c14
+FC4A: 08       php
+FC4B: 14 1C    nop $1c, x
+FC4D: 08       php
+FC4E: 30 18    bmi $fc68
+FC50: 70 A0    bvs $fbf2
+FC52: C0 00    cpy #$00
+FC54: 00       brk
+FC55: 00       brk
+FC56: 00       brk
+FC57: 00       brk
+FC58: 00       brk
+FC59: 00       brk
+FC5A: 01 07    ora ($07, x)
+FC5C: 02       kil
+FC5D: 00       brk
+FC5E: 00       brk
+FC5F: 00       brk
+FC60: 00       brk
+FC61: 38       sec
+FC62: 38       sec
+FC63: 30 30    bmi $fc95
+FC65: 30 3F    bmi $fca6
+FC67: 3F 00 FF rla $ff00, x
+FC6A: FE CC CC inc $cccc, x
+FC6D: 0C FC FC nop $fcfc
+FC70: 00       brk
+FC71: 3F 3F 30 rla $303f, x
+FC74: 30 30    bmi $fca6
+FC76: 3F 3F 00 rla $003f, x
+FC79: FE FE 06 inc $06fe, x
+FC7C: 06 06    asl $06
+FC7E: FE FE 00 inc $00fe, x
+FC81: 00       brk
+FC82: 00       brk
+FC83: 00       brk
+FC84: 00       brk
+FC85: 00       brk
+FC86: 3F 3F 00 rla $003f, x
+FC89: 06 06    asl $06
+FC8B: 06 06    asl $06
+FC8D: 06 FE    asl $fe
+FC8F: FE 00 1F inc $1f00, x
+FC92: 3F 38 30 rla $3038, x
+FC95: 30 3F    bmi $fcd6
+FC97: 3F 00 FC rla $fc00, x
+FC9A: FE 0E 06 inc $060e, x
+FC9D: 06 FE    asl $fe
+FC9F: FE 00 31 inc $3100, x
+FCA2: 31 31    and ($31), y
+FCA4: 31 31    and ($31), y
+FCA6: 3F 3F 00 rla $003f, x
+FCA9: 86 86    stx $86
+FCAB: 86 86    stx $86
+FCAD: 86 FE    stx $fe
+FCAF: FE 00 3F inc $3f00, x
+FCB2: 3F 03 1F rla $1f03, x
+FCB5: 1F 3F 3F slo $3f3f, x
+FCB8: 00       brk
+FCB9: FE FE FC inc $fcfe, x
+FCBC: F0 80    beq $fc3e
+FCBE: FE FE 00 inc $00fe, x
+FCC1: 38       sec
+FCC2: 38       sec
+FCC3: 30 30    bmi $fcf5
+FCC5: 30 3F    bmi $fd06
+FCC7: 3F 00 0E rla $0e00, x
+FCCA: 0E 06 06 asl $0606
+FCCD: 06 FE    asl $fe
+FCCF: FE 00 3F inc $3f00, x
+FCD2: 3F 00 00 rla $0000, x
+FCD5: 00       brk
+FCD6: 3F 3F 00 rla $003f, x
+FCD9: FE FE 06 inc $06fe, x
+FCDC: 06 06    asl $06
+FCDE: FE FE 00 inc $00fe, x
+FCE1: 1E 3F 3B asl $3b3f, x
+FCE4: 31 31    and ($31), y
+FCE6: 3F 3F 00 rla $003f, x
+FCE9: 7C FE CE nop $cefe, x
+FCEC: 86 86    stx $86
+FCEE: FE FE 10 inc $10fe, x
+FCF1: 10 00    bpl $fcf3
+FCF3: 00       brk
+FCF4: 10 10    bpl $fd06
+FCF6: 00       brk
+FCF7: 00       brk
+FCF8: 24 12    bit $12
+FCFA: 24 10    bit $10
+FCFC: 00       brk
+FCFD: 00       brk
+FCFE: 00       brk
+FCFF: 00       brk
+FD00: 00       brk
+FD01: 00       brk
+FD02: 00       brk
+FD03: 00       brk
+FD04: 00       brk
+FD05: 00       brk
+FD06: 03 1C    slo ($1c, x)
+FD08: 00       brk
+FD09: 00       brk
+FD0A: 10 10    bpl $fd1c
+FD0C: 3E F8 70 rol $70f8, x
+FD0F: 38       sec
+FD10: F0 1C    beq $fd2e
+FD12: 03 00    slo ($00, x)
+FD14: 00       brk
+FD15: 00       brk
+FD16: 00       brk
+FD17: 00       brk
+FD18: 7E 38 70 ror $7038, x
+FD1B: F8       sed
+FD1C: 3E 10 10 rol $1010, x
+FD1F: 00       brk
+FD20: 00       brk
+FD21: 00       brk
+FD22: 00       brk
+FD23: 00       brk
+FD24: 00       brk
+FD25: 00       brk
+FD26: 12       kil
+FD27: 24 00    bit $00
+FD29: 00       brk
+FD2A: 10 10    bpl $fd3c
+FD2C: 00       brk
+FD2D: 00       brk
+FD2E: 00       brk
+FD2F: 00       brk
+FD30: 00       brk
+FD31: 00       brk
+FD32: 00       brk
+FD33: 00       brk
+FD34: 00       brk
+FD35: 00       brk
+FD36: 10 10    bpl $fd48
+FD38: 00       brk
+FD39: 00       brk
+FD3A: 00       brk
+FD3B: 00       brk
+FD3C: 00       brk
+FD3D: 00       brk
+FD3E: 00       brk
+FD3F: 00       brk
+FD40: 00       brk
+FD41: 00       brk
+FD42: 00       brk
+FD43: 00       brk
+FD44: 24 12    bit $12
+FD46: 24 10    bit $10
+FD48: 00       brk
+FD49: 00       brk
+FD4A: 00       brk
+FD4B: 00       brk
+FD4C: 00       brk
+FD4D: 00       brk
+FD4E: 00       brk
+FD4F: 00       brk
+FD50: 00       brk
+FD51: 00       brk
+FD52: 00       brk
+FD53: 14 22    nop $22, x
+FD55: 14 00    nop $00, x
+FD57: 00       brk
+FD58: 00       brk
+FD59: 00       brk
+FD5A: 00       brk
+FD5B: 00       brk
+FD5C: 00       brk
+FD5D: 00       brk
+FD5E: 00       brk
+FD5F: 00       brk
+FD60: 00       brk
+FD61: 00       brk
+FD62: 12       kil
+FD63: 24 12    bit $12
+FD65: 04 00    nop $00
+FD67: 00       brk
+FD68: 60       rts
+FD69: 06 06    asl $06
+FD6B: 00       brk
+FD6C: 00       brk
+FD6D: 61 61    adc ($61, x)
+FD6F: 00       brk
+FD70: 00       brk
+FD71: 61 61    adc ($61, x)
+FD73: 00       brk
+FD74: 00       brk
+FD75: 06 06    asl $06
+FD77: 60       rts
+FD78: 06 60    asl $60
+FD7A: 60       rts
+FD7B: 00       brk
+FD7C: 00       brk
+FD7D: 86 86    stx $86
+FD7F: 00       brk
+FD80: 00       brk
+FD81: 86 86    stx $86
+FD83: 00       brk
+FD84: 00       brk
+FD85: 60       rts
+FD86: 60       rts
+FD87: 06 00    asl $00
+FD89: 06 06    asl $06
+FD8B: 00       brk
+FD8C: 00       brk
+FD8D: 00       brk
+FD8E: 00       brk
+FD8F: 00       brk
+FD90: 60       rts
+FD91: 00       brk
+FD92: 00       brk
+FD93: 00       brk
+FD94: 00       brk
+FD95: 18       clc
+FD96: 18       clc
+FD97: 00       brk
+FD98: 00       brk
+FD99: 18       clc
+FD9A: 00       brk
+FD9B: 00       brk
+FD9C: 00       brk
+FD9D: 00       brk
+FD9E: 00       brk
+FD9F: 60       rts
+FDA0: 00       brk
+FDA1: 00       brk
+FDA2: 00       brk
+FDA3: 00       brk
+FDA4: 00       brk
+FDA5: 06 06    asl $06
+FDA7: 00       brk
+FDA8: 00       brk
+FDA9: 00       brk
+FDAA: 00       brk
+FDAB: 60       rts
+FDAC: 60       rts
+FDAD: 01 01    ora ($01, x)
+FDAF: 00       brk
+FDB0: 00       brk
+FDB1: 01 01    ora ($01, x)
+FDB3: 60       rts
+FDB4: 60       rts
+FDB5: 00       brk
+FDB6: 00       brk
+FDB7: 00       brk
+FDB8: 00       brk
+FDB9: 00       brk
+FDBA: 00       brk
+FDBB: 06 06    asl $06
+FDBD: 80 80    nop #$80
+FDBF: 00       brk
+FDC0: 00       brk
+FDC1: 80 80    nop #$80
+FDC3: 06 06    asl $06
+FDC5: 00       brk
+FDC6: 00       brk
+FDC7: 00       brk
+FDC8: 00       brk
+FDC9: 60       rts
+FDCA: 60       rts
+FDCB: 00       brk
+FDCC: 00       brk
+FDCD: 00       brk
+FDCE: 00       brk
+FDCF: 00       brk
+FDD0: 06 00    asl $00
+FDD2: 00       brk
+FDD3: 00       brk
+FDD4: 00       brk
+FDD5: 18       clc
+FDD6: 18       clc
+FDD7: 00       brk
+FDD8: 00       brk
+FDD9: 18       clc
+FDDA: 18       clc
+FDDB: 00       brk
+FDDC: 00       brk
+FDDD: 00       brk
+FDDE: 00       brk
+FDDF: 06 00    asl $00
+FDE1: 00       brk
+FDE2: 00       brk
+FDE3: 00       brk
+FDE4: 00       brk
+FDE5: 60       rts
+FDE6: 60       rts
+FDE7: 00       brk
+FDE8: 00       brk
+FDE9: 00       brk
+FDEA: 00       brk
+FDEB: 00       brk
+FDEC: 00       brk
+FDED: 00       brk
+FDEE: 00       brk
+FDEF: 00       brk
+FDF0: 00       brk
+FDF1: 00       brk
+FDF2: 00       brk
+FDF3: 00       brk
+FDF4: 00       brk
+FDF5: 00       brk
+FDF6: 00       brk
+FDF7: 00       brk
+FDF8: 00       brk
+FDF9: 00       brk
+FDFA: 00       brk
+FDFB: 00       brk
+FDFC: 00       brk
+FDFD: 00       brk
+FDFE: 00       brk
+FDFF: 00       brk
+FE00: 00       brk
+FE01: 00       brk
+FE02: 00       brk
+FE03: 00       brk
+FE04: 00       brk
+FE05: 00       brk
+FE06: 00       brk
+FE07: 00       brk
+FE08: 00       brk
+FE09: 00       brk
+FE0A: 00       brk
+FE0B: 00       brk
+FE0C: 00       brk
+FE0D: 00       brk
+FE0E: 00       brk
+FE0F: 00       brk
+FE10: 00       brk
+FE11: 00       brk
+FE12: 00       brk
+FE13: 00       brk
+FE14: 00       brk
+FE15: 00       brk
+FE16: 00       brk
+FE17: 00       brk
+FE18: 00       brk
+FE19: 00       brk
+FE1A: 00       brk
+FE1B: 00       brk
+FE1C: 00       brk
+FE1D: 00       brk
+FE1E: 00       brk
+FE1F: 00       brk
+FE20: 00       brk
+FE21: 00       brk
+FE22: 00       brk
+FE23: 00       brk
+FE24: 00       brk
+FE25: 00       brk
+FE26: 00       brk
+FE27: 00       brk
+FE28: 00       brk
+FE29: 00       brk
+FE2A: 00       brk
+FE2B: 00       brk
+FE2C: 00       brk
+FE2D: 00       brk
+FE2E: 00       brk
+FE2F: 00       brk
+FE30: 00       brk
+FE31: 00       brk
+FE32: 00       brk
+FE33: 00       brk
+FE34: 00       brk
+FE35: 00       brk
+FE36: 00       brk
+FE37: 00       brk
+FE38: 00       brk
+FE39: 00       brk
+FE3A: 00       brk
+FE3B: 00       brk
+FE3C: 00       brk
+FE3D: 00       brk
+FE3E: 00       brk
+FE3F: 00       brk
+FE40: 00       brk
+FE41: 00       brk
+FE42: 00       brk
+FE43: 00       brk
+FE44: 00       brk
+FE45: 00       brk
+FE46: 00       brk
+FE47: 00       brk
+FE48: 00       brk
+FE49: 00       brk
+FE4A: 00       brk
+FE4B: 00       brk
+FE4C: 00       brk
+FE4D: 00       brk
+FE4E: 00       brk
+FE4F: 00       brk
+FE50: 00       brk
+FE51: 00       brk
+FE52: 00       brk
+FE53: 00       brk
+FE54: 00       brk
+FE55: 00       brk
+FE56: 00       brk
+FE57: 00       brk
+FE58: 02       kil
+FE59: 02       kil
+FE5A: 7C 00 32 nop $3200, x
+FE5D: 4C 48 7E jmp $7e48
+FE60: 00       brk
+FE61: 00       brk
+FE62: 2C 52 52 bit $5252
+FE65: 7E 00 7C ror $7c00, x
+FE68: 7E 00 52 ror $5200, x
+FE6B: 52       kil
+FE6C: 52       kil
+FE6D: 7E 00 00 ror $0000, x
+FE70: 3C 42 42 nop $4242, x
+FE73: 7E 00 7E ror $7e00, x
+FE76: 0C 30 0F nop $0f30
+FE79: 0E 0C 06 asl $060c
+FE7C: 03 01    slo ($01, x)
+FE7E: 00       brk
+FE7F: 00       brk
+FE80: 00       brk
+FE81: 00       brk
+FE82: 00       brk
+FE83: 00       brk
+FE84: 00       brk
+FE85: 00       brk
+FE86: 04 08    nop $08
+FE88: C0 E0    cpy #$e0
+FE8A: 60       rts
+FE8B: E0 C0    cpx #$c0
+FE8D: 80 00    nop #$00
+FE8F: 00       brk
+FE90: 00       brk
+FE91: 00       brk
+FE92: 00       brk
+FE93: 00       brk
+FE94: 18       clc
+FE95: 38       sec
+FE96: 10 00    bpl $fe98
+FE98: FE FE FE inc $fefe, x
+FE9B: FE FE FE inc $fefe, x
+FE9E: FE FE FE inc $fefe, x
+FEA1: FE FE FE inc $fefe, x
+FEA4: FE FE FE inc $fefe, x
+FEA7: FE 7F 7F inc $7f7f, x
+FEAA: 7F 7F 7F rra $7f7f, x
+FEAD: 7F 7F 7F rra $7f7f, x
+FEB0: 7F 7F 7F rra $7f7f, x
+FEB3: 7F 7F 7F rra $7f7f, x
+FEB6: 7F 7F FF rra $ff7f, x
+FEB9: FF FF FF isb $ffff, x
+FEBC: FF FF FF isb $ffff, x
+FEBF: FF FF FF isb $ffff, x
+FEC2: FF FF FF isb $ffff, x
+FEC5: FF FF FF isb $ffff, x
+FEC8: 3F 9F CF rla $cf9f, x
+FECB: E7 F3    isb $f3
+FECD: F9 FC FE sbc $fefc, y
+FED0: FE FC F9 inc $f9fc, x
+FED3: F3 E7    isb ($e7), y
+FED5: CF 9F 3F dcp $3f9f
+FED8: 00       brk
+FED9: FF FF FF isb $ffff, x
+FEDC: FF FF FF isb $ffff, x
+FEDF: FF FF FF isb $ffff, x
+FEE2: FF FF FF isb $ffff, x
+FEE5: FF FF 00 isb $00ff, x
+FEE8: FF FF FF isb $ffff, x
+FEEB: FF FF FF isb $ffff, x
+FEEE: FF FF FF isb $ffff, x
+FEF1: FF FF FF isb $ffff, x
+FEF4: FF FF FF isb $ffff, x
+FEF7: FF FF FF isb $ffff, x
+FEFA: FF FF FF isb $ffff, x
+FEFD: FF FF FF isb $ffff, x
+FF00: FF FF FF isb $ffff, x
+FF03: FF FF FF isb $ffff, x
+FF06: FF FF FF isb $ffff, x
+FF09: FF FF FF isb $ffff, x
+FF0C: FF FF FF isb $ffff, x
+FF0F: FF 3C 3C isb $3c3c, x
+FF12: 3C 3C 3C nop $3c3c, x
+FF15: 3C 3C 3C nop $3c3c, x
+FF18: 3C 3C 3C nop $3c3c, x
+FF1B: 3C 3C 3C nop $3c3c, x
+FF1E: 3C 3C 3C nop $3c3c, x
+FF21: 3C 3C 3C nop $3c3c, x
+FF24: 3C 3C 3C nop $3c3c, x
+FF27: 3C 3C 3C nop $3c3c, x
+FF2A: 3C 3C 3C nop $3c3c, x
+FF2D: 3C 3C 3C nop $3c3c, x
+FF30: 3C 3C 3C nop $3c3c, x
+FF33: 3C 3C 3C nop $3c3c, x
+FF36: 3C 3C 3F nop $3f3c, x
+FF39: 00       brk
+FF3A: 00       brk
+FF3B: 00       brk
+FF3C: 02       kil
+FF3D: 03 00    slo ($00, x)
+FF3F: 00       brk
+FF40: 31 F7    and ($f7), y
+FF42: 1F 01 00 slo $0001, x
+FF45: E0 FE    cpx #$fe
+FF47: 7F 90 C8 rra $c890, x
+FF4A: FC FD 3F nop $3ffd, x
+FF4D: 07 00    slo $00
+FF4F: C0 00    cpy #$00
+FF51: 01 02    ora ($02, x)
+FF53: 00       brk
+FF54: 07 00    slo $00
+FF56: 00       brk
+FF57: 00       brk
+FF58: FF FF 7F isb $7fff, x
+FF5B: 7F DF 1F rra $1fdf, x
+FF5E: 13 10    slo ($10), y
+FF60: F8       sed
+FF61: FE FC FD inc $fdfc, x
+FF64: FD 86 C0 sbc $c086, x
+FF67: F0 FF    beq $ff68
+FF69: FF FF FF isb $ffff, x
+FF6C: FF FF FF isb $ffff, x
+FF6F: FF FF FF isb $ffff, x
+FF72: FF FF FF isb $ffff, x
+FF75: FF FF FF isb $ffff, x
+FF78: FF FF FF isb $ffff, x
+FF7B: FF FF FF isb $ffff, x
+FF7E: FF FF FF isb $ffff, x
+FF81: FF FF FF isb $ffff, x
+FF84: FF FF FF isb $ffff, x
+FF87: FF FF FF isb $ffff, x
+FF8A: FF FF FF isb $ffff, x
+FF8D: FF FF FF isb $ffff, x
+FF90: FF FF FF isb $ffff, x
+FF93: FF FF FF isb $ffff, x
+FF96: FF FF FF isb $ffff, x
+FF99: FF FF FF isb $ffff, x
+FF9C: FF FF FF isb $ffff, x
+FF9F: FF FF FF isb $ffff, x
+FFA2: FF FF FF isb $ffff, x
+FFA5: FF FF FF isb $ffff, x
+FFA8: FF FF FF isb $ffff, x
+FFAB: FF FF FF isb $ffff, x
+FFAE: FF FF FF isb $ffff, x
+FFB1: FF FF FF isb $ffff, x
+FFB4: FF FF FF isb $ffff, x
+FFB7: FF FF FF isb $ffff, x
+FFBA: FF FF FF isb $ffff, x
+FFBD: FF FF FF isb $ffff, x
+FFC0: FF FF FF isb $ffff, x
+FFC3: FF FF FF isb $ffff, x
+FFC6: FF FF FF isb $ffff, x
+FFC9: FF FF FF isb $ffff, x
+FFCC: FF FF FF isb $ffff, x
+FFCF: FF 07 0C isb $0c07, x
+FFD2: 18       clc
+FFD3: 30 26    bmi $fffb
+FFD5: 6E 4C 4C ror $4c4c
+FFD8: 4C 4C 6E jmp $6e4c
+FFDB: 27 33    rla $33
+FFDD: 18       clc
+FFDE: 0C 07 E0 nop $e007
+FFE1: 30 18    bmi $fffb
+FFE3: 0C 64 76 nop $7664
+FFE6: 32       kil
+FFE7: 32       kil
+FFE8: 32       kil
+FFE9: 32       kil
+FFEA: 76 E4    ror $e4, x
+FFEC: CC 18 30 cpy $3018
+FFEF: E0 00    cpx #$00
+FFF1: 07 0E    slo $0e
+FFF3: 3E E7 3E rol $3ee7, x
+FFF6: 0E 07 FF asl $ff07
+FFF9: FF 00 74 isb $7400, x
+FFFC: 00       brk
+FFFD: 40       rti
+FFFE: 00       brk
+FFFF: 70 00    bvs $0001

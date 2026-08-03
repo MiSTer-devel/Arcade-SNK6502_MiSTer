@@ -65,11 +65,13 @@ localparam GID_NIBBLER  = 4'd5;
 // ---------------------------------------------------------------------------
 // ROM download address decoding
 // Layout: $00000-$0FFFF = maincpu (64K), $10000-$11FFF = gfx1 (8K),
-//         $12000-$1203F = proms (64 bytes), $12040-$137FF = sound ROM (6K)
+//         $12000-$1203F = proms (64 bytes), $12040-$137FF = sound ROM (6K),
+//         $14000-$157FF = speech ROM (6K, Vanguard/Fantasy HD38880 PARCOR data)
 wire dn_maincpu = (dn_addr[16:16] == 1'b0);                    // $00000-$0FFFF
 wire dn_gfx1    = (dn_addr[16:13] == 4'b1_000);                // $10000-$11FFF
 wire dn_proms   = (dn_addr[16:6]  == 11'b1_0010_0000_00);      // $12000-$1203F
 wire dn_sndrom  = (dn_addr[16:13] == 4'b1_001) & ~dn_proms;    // $12040-$13FFF
+wire dn_speech  = (dn_addr[16:13] == 4'b1_010);                // $14000-$15FFF
 
 // ---------------------------------------------------------------------------
 // Clock generation
@@ -335,7 +337,10 @@ dpram #(.address_width(11)) char_ram_p1(
 wire dn_gfx_p0 = dn_gfx1 & (dn_addr[12] == 1'b0);   // $10000-$10FFF
 wire dn_gfx_p1 = dn_gfx1 & (dn_addr[12] == 1'b1);   // $11000-$11FFF
 
-wire [11:0] bg_pixel_addr = {bg_tile_code[8:0], tile_line};
+// SCROLL-FINE-Y-2026-08-03: was `tile_line`; now the fine-scrolled line so the
+// BG samples the right pixel row within the tile (see bg_row / bg_line below).
+// Original: wire [11:0] bg_pixel_addr = {bg_tile_code[8:0], tile_line};
+wire [11:0] bg_pixel_addr = {bg_tile_code[8:0], bg_line};
 wire [7:0] bg_p0_dout, bg_p1_dout;
 
 dpram #(.address_width(12)) gfx_p0(
@@ -440,8 +445,41 @@ wire [2:0] tile_line = crtc_ra[2:0];
 wire [9:0] tile_addr = crtc_ma[9:0];
 
 // BG layer: apply scroll registers
-wire [4:0] bg_col = tile_col + scroll_x[7:3];
-wire [4:0] bg_row = tile_row + scroll_y[7:3];
+//
+// SCROLL-FINE-Y-2026-08-03: the scroll registers are 8-bit PIXEL values, but
+// only bits [7:3] (the tile index) were used - the low 3 bits, the fine pixel
+// offset inside the tile, were discarded. That makes the BG layer move in whole
+// 8-pixel tile steps: correct position, but it HOPS instead of gliding (user
+// report: the Vanguard intro logo scroll). MAME applies the full 8-bit value
+// (snk6502_v.cpp:139 set_scrolly(0, data)), so [7:3]-only is wrong vs reference.
+//
+// Fix for the Y axis: add the fine offset to the line-within-tile, and carry
+// into the tile row when it wraps past 7. Vanguard writes $3300 (scroll_y)
+// 2967 times vs 199 for $3200 in the MAME trace, so this is the axis that
+// actually carries the scrolling.
+//
+// NOTE: the X axis is still coarse-only. Fixing it needs the pixel shift
+// register (bg_p0_latch/bg_p1_latch, ~line 664) restructured to span two tiles
+// so a sub-tile start bit can be selected - a real change to the render
+// pipeline, deliberately NOT bundled in with this one.
+//
+// Original: wire [4:0] bg_row = tile_row + scroll_y[7:3];
+//
+// SCROLL-FINE-X-2026-08-03: the X axis now fetches one tile AHEAD (+1). A fine
+// offset f = scroll_x[2:0] needs pixels [f..f+7] of the byte stream, which
+// straddles tile T and tile T+1 - i.e. it needs LOOKAHEAD. Fetching at +1 means
+// that at display-character time T the newly latched gfx byte is byte T+1, while
+// the previous latch still holds byte T; the pixel stage below assembles those
+// into a 16-bit window and taps it at bit (15 - f). The +1 wraps mod 32, which is
+// correct tilemap wrapping. See the pixel-pipeline block for the rest.
+// Original: wire [4:0] bg_col = tile_col + scroll_x[7:3];
+wire [4:0] bg_col = tile_col + scroll_x[7:3] + 5'd1;
+
+wire [3:0] bg_line_sum   = {1'b0, tile_line} + {1'b0, scroll_y[2:0]};
+wire [2:0] bg_line       = bg_line_sum[2:0];
+wire       bg_line_carry = bg_line_sum[3];
+wire [4:0] bg_row = tile_row + scroll_y[7:3] + {4'd0, bg_line_carry};
+
 wire [9:0] bg_tile_addr = {bg_row, bg_col};
 
 assign vram2_vid_addr    = tile_addr;
@@ -499,6 +537,14 @@ wire scrolly_wr = (game_id == GID_VANGUARD)  ? vg_scrolly_wr :
                   (game_id == GID_NIBBLER)   ? fy_scrolly_wr :
                   (game_id == GID_PBALLOON)  ? pb_scrolly_wr :
                   1'b0;
+
+// HD38880 speech chip host port (Vanguard $3400 / Fantasy $2400 only —
+// Nibbler shares Fantasy's I/O map but has no speech hardware, so it's
+// excluded here even though fy_speech_wr's address decode would otherwise fire).
+wire speech_wr = (game_id == GID_VANGUARD) ? vg_speech_wr :
+                  (game_id == GID_FANTASY)  ? fy_speech_wr :
+                  1'b0;
+wire speech_game_is_fantasy = (game_id == GID_FANTASY);
 
 // ---------------------------------------------------------------------------
 // VBlank IRQ generation
@@ -634,7 +680,12 @@ wire [2:0] fg_color = (game_id <= GID_SATANSAT) ?
     {1'b0, colorram_fg_vid_dout[1:0]} :
     (colorram_fg_vid_dout[2:0]);
 
-reg [7:0] bg_p0_latch, bg_p1_latch;
+// SCROLL-FINE-X-2026-08-03: BG is now a 16-bit two-tile window plus a one-character
+// history register; FG keeps the original 8-bit shift latches.
+// Original: reg [7:0] bg_p0_latch, bg_p1_latch;
+reg [7:0]  bg_p0_prev, bg_p1_prev;
+reg [15:0] bg_p0_win,  bg_p1_win;
+reg [2:0]  bg_color_prev;
 reg [7:0] fg_p0_latch, fg_p1_latch;
 reg [2:0] bg_color_latch, fg_color_latch;
 
@@ -651,17 +702,53 @@ wire [7:0] fg_p1_raw = charram_p1_dout;
 reg crtc_clken_d;
 always @(posedge clk_master) crtc_clken_d <= crtc_clken;
 
+// SCROLL-FINE-X-2026-08-03: BG pixel stage rebuilt as a 16-bit two-tile window.
+// FG is UNCHANGED (it does not scroll).
+//
+//   bg_*_prev  holds byte T   (latched one character time ago)
+//   bg_*_dout  holds byte T+1 (because bg_col fetches at +1, see above)
+//   bg_*_win   = {byte T, byte T+1}, shifted left one bit per ce_pix
+//   output tap = bit (15 - f), f = scroll_x[2:0]
+//
+// After k shifts the tap exposes original bit (15-f-k), so a character time emits
+// bits 15-f .. 8-f of the window - exactly pixels [f..f+7] of the stream.
+//
+// SAFETY PROPERTY: at f=0 the tap is bit 15 = bg_*_prev[7], and after k shifts it
+// is bg_*_prev[7-k] - bit-identical to the old bg_*_latch[7] behaviour. The colour
+// is likewise delayed one character (bg_color_prev) so it still belongs to tile T.
+// So f=0 reproduces the previous design exactly; only nonzero fine bits change
+// anything, and MAME applies the full 8-bit scroll value the same way.
+//
+// Original block:
+// always @(posedge clk_master) begin
+//     if (crtc_clken) begin
+//         bg_p0_latch    <= bg_p0_dout;
+//         bg_p1_latch    <= bg_p1_dout;
+//         fg_p0_latch    <= fg_p0_raw;
+//         fg_p1_latch    <= fg_p1_raw;
+//         bg_color_latch <= bg_color;
+//         fg_color_latch <= fg_color;
+//     end else if (ce_pix) begin
+//         bg_p0_latch <= {bg_p0_latch[6:0], 1'b0};
+//         bg_p1_latch <= {bg_p1_latch[6:0], 1'b0};
+//         fg_p0_latch <= {fg_p0_latch[6:0], 1'b0};
+//         fg_p1_latch <= {fg_p1_latch[6:0], 1'b0};
+//     end
+// end
 always @(posedge clk_master) begin
     if (crtc_clken) begin
-        bg_p0_latch    <= bg_p0_dout;
-        bg_p1_latch    <= bg_p1_dout;
+        bg_p0_win      <= {bg_p0_prev, bg_p0_dout};
+        bg_p1_win      <= {bg_p1_prev, bg_p1_dout};
+        bg_p0_prev     <= bg_p0_dout;
+        bg_p1_prev     <= bg_p1_dout;
+        bg_color_latch <= bg_color_prev;   // colour of tile T, matching window[15:8]
+        bg_color_prev  <= bg_color;
         fg_p0_latch    <= fg_p0_raw;
         fg_p1_latch    <= fg_p1_raw;
-        bg_color_latch <= bg_color;
         fg_color_latch <= fg_color;
     end else if (ce_pix) begin
-        bg_p0_latch <= {bg_p0_latch[6:0], 1'b0};
-        bg_p1_latch <= {bg_p1_latch[6:0], 1'b0};
+        bg_p0_win   <= {bg_p0_win[14:0], 1'b0};
+        bg_p1_win   <= {bg_p1_win[14:0], 1'b0};
         fg_p0_latch <= {fg_p0_latch[6:0], 1'b0};
         fg_p1_latch <= {fg_p1_latch[6:0], 1'b0};
     end
@@ -674,7 +761,14 @@ wire pballoon_bg_swap = (game_id == GID_PBALLOON);
 
 // Sasuke swaps bitplane order in GFX ROM
 wire sasuke_swap = (game_id == GID_SASUKE);
-wire [1:0] bg_pixel_raw = {bg_p1_latch[7], bg_p0_latch[7]};
+// SCROLL-FINE-X-2026-08-03: tap the two-tile window at (15 - fine offset).
+// Index computed into a named wire first - this is a .v file, elaborated as
+// Verilog-2001 by Quartus 17.0 (see feedback_verilog2001_expression_bitselect).
+// Original: wire [1:0] bg_pixel_raw = {bg_p1_latch[7], bg_p0_latch[7]};
+wire [3:0] bg_fine_tap  = 4'd15 - {1'b0, scroll_x[2:0]};
+wire       bg_p0_bit    = bg_p0_win[bg_fine_tap];
+wire       bg_p1_bit    = bg_p1_win[bg_fine_tap];
+wire [1:0] bg_pixel_raw = {bg_p1_bit, bg_p0_bit};
 //wire bg_swap = sasuke_swap | fantasy_nibbler_swap | pballoon_bg_swap;
 wire bg_swap = sasuke_swap | fantasy_nibbler_swap | pballoon_bg_swap | (game_id == GID_VANGUARD);
 wire [1:0] bg_pixel = bg_swap ? {bg_pixel_raw[0], bg_pixel_raw[1]} : bg_pixel_raw;
@@ -781,9 +875,36 @@ assign vblank = vblank_pipe[env_idx];
 // ---------------------------------------------------------------------------
 // RGB pixel output
 // ---------------------------------------------------------------------------
-assign rgb_r = display_active ? {prom_dout[2:0], prom_dout[2:0], prom_dout[1:0]} : 8'd0;
-assign rgb_g = display_active ? {prom_dout[5:3], prom_dout[5:3], prom_dout[4:3]} : 8'd0;
-assign rgb_b = display_active ? {prom_dout[7:6], prom_dout[7:6], prom_dout[7:6], prom_dout[7:6]} : 8'd0;
+// PALETTE-WEIGHTS-2026-08-03: was bit-replication, which is NOT what the board
+// does. MAME snk6502_v.cpp:26 (snk6502_palette; satansat_palette:189 is
+// identical, so one formula covers all six games) uses resistor weights
+// 0x21 / 0x47 / 0x97 per bit:
+//     r = 0x21*bit0 + 0x47*bit1 + 0x97*bit2      (prom bits 2:0)
+//     g = 0x21*bit3 + 0x47*bit4 + 0x97*bit5      (prom bits 5:3)
+//     b =            0x47*bit6 + 0x97*bit7       (prom bits 7:6)  <-- only TWO resistors
+//
+// The BLUE channel has no 0x21 leg, so blue maxes at 0x47+0x97 = 222, NOT 255.
+// Bit-replication gave blue 0/85/170/255 - systematically ~15% too bright -
+// which is why our cyan terrain measured (0,255,255) where MAME has (0,255,222).
+// Red/green replication happened to land within a few LSB, so this mostly shows
+// up as a blue/cyan hue shift across terrain, minimap and sprites alike.
+// Verified against screenshots: MAME's brightest blue really is 222.
+// Original:
+//   assign rgb_r = display_active ? {prom_dout[2:0], prom_dout[2:0], prom_dout[1:0]} : 8'd0;
+//   assign rgb_g = display_active ? {prom_dout[5:3], prom_dout[5:3], prom_dout[4:3]} : 8'd0;
+//   assign rgb_b = display_active ? {prom_dout[7:6], prom_dout[7:6], prom_dout[7:6], prom_dout[7:6]} : 8'd0;
+wire [7:0] pal_r = (prom_dout[0] ? 8'h21 : 8'h00)
+                 + (prom_dout[1] ? 8'h47 : 8'h00)
+                 + (prom_dout[2] ? 8'h97 : 8'h00);
+wire [7:0] pal_g = (prom_dout[3] ? 8'h21 : 8'h00)
+                 + (prom_dout[4] ? 8'h47 : 8'h00)
+                 + (prom_dout[5] ? 8'h97 : 8'h00);
+wire [7:0] pal_b = (prom_dout[6] ? 8'h47 : 8'h00)
+                 + (prom_dout[7] ? 8'h97 : 8'h00);
+
+assign rgb_r = display_active ? pal_r : 8'd0;
+assign rgb_g = display_active ? pal_g : 8'd0;
+assign rgb_b = display_active ? pal_b : 8'd0;
 
 // NMI on coin insertion - edge triggered one-shot
 //
@@ -831,6 +952,48 @@ dpram #(.address_width(13)) sound_rom(
 );
 
 // ---------------------------------------------------------------------------
+// Speech ROM (HD38880 PARCOR data) - 6KB at $14000 in download space,
+// Vanguard (sk6_ic07/08/11.bin) or Fantasy (fs_d_7/e_8/f_11.bin) depending
+// on which MRA is loaded. Addressed 0x000-0x17FF (game address $4000 base
+// subtracted by hd38880_top).
+// ---------------------------------------------------------------------------
+wire [12:0] speech_rom_addr;
+wire [7:0]  speech_rom_dout;
+
+dpram #(.address_width(13)) speech_rom(
+    .clock_a  (clk_sys),
+    .enable_a (1'b1),
+    .wren_a   (dn_wr & dn_speech),
+    .address_a(dn_addr[12:0]),
+    .data_a   (dn_data),
+    .q_a      (),
+
+    .clock_b  (clk_master),
+    .enable_b (1'b1),
+    .wren_b   (1'b0),
+    .address_b(speech_rom_addr),
+    .data_b   (8'd0),
+    .q_b      (speech_rom_dout)
+);
+
+// ---------------------------------------------------------------------------
+// HD38880 speech synthesizer (Vanguard / Fantasy)
+// ---------------------------------------------------------------------------
+wire signed [14:0] speech_audio;
+
+hd38880_top #(.CLK_HZ(11_289_000)) speech (
+    .clk             (clk_master),
+    .reset           (reset),
+    .pause           (pause),
+    .host_wr         (speech_wr),
+    .host_din        (cpu_dout[5:0]),
+    .game_is_fantasy (speech_game_is_fantasy),
+    .rom_addr        (speech_rom_addr),
+    .rom_data        (speech_rom_dout),
+    .audio_out       (speech_audio)
+);
+
+// ---------------------------------------------------------------------------
 // Sound port write strobes — game-aware (per MAME memory maps)
 //   Fantasy/Nibbler:  $2100-$2103  (port 3 also written by fantasy_flipscreen_w)
 //   Vanguard:         $3100-$3102  (no port 3; $3103 is flipscreen only)
@@ -865,6 +1028,9 @@ snk6502_snd sound(
     .wr1           (snd_wr1),
     .wr2           (snd_wr2),
     .wr3           (snd_wr3),
+    // VANGUARD-SOUND-2026-08-03: selects MAME's vanguard_sound_device semantics
+    // instead of fantasy_sound_device's. See Claude/vanguard_audio_audit_2026-08-03.md
+    .game_is_vanguard (game_id == GID_VANGUARD),
     .snd_rom_data  (snd_rom_dout),
     .snd_rom_addr  (snd_rom_addr),
     .audio_out     (snd_audio),
@@ -890,10 +1056,31 @@ snk6502_noise noise_gen(
     .audio_out(noise_audio)
 );
 
-// Saturating signed mix
-wire signed [16:0] audio_mix = $signed(snd_audio) + $signed(noise_audio);
-assign audio = audio_mix[16] != audio_mix[15] ?
-               (audio_mix[16] ? 16'sh8000 : 16'sh7FFF) :
-               audio_mix[15:0];
+// Saturating signed mix (tone + noise + speech).
+//
+// SPEECH-GAIN-2026-08-03: the original `>>> 6` was a guess inherited from a
+// DIFFERENT chip's mixing note, and it is wrong by ~40 dB in the wrong
+// direction. parcor_lattice's audio_out is signed 15-bit (+-16384) while
+// snd_audio and noise_audio are both signed 16-bit (+-32768), so speech was
+// already the QUIETER channel before any shift; >>>6 then divided it by a
+// further 64. Verilator bench (verilator/, real $3400 stimulus reconstructed
+// from vanguard_maincpu-4000.dasm) measured a phrase peak of 4233/16384 raw,
+// which >>>6 turned into 66 out of 32768 output full scale = -54 dB. The whole
+// chain was working; the mix made it inaudible.
+//
+// A straight level-match of 15-bit onto 16-bit is <<1 (full scale maps to full
+// scale exactly, no clipping possible beyond the existing saturation). The
+// measured phrase peak becomes 8466 = ~26% of output full scale, with headroom
+// for hotter phrases. TUNABLE: drop the <<<1 to a plain assign if too loud.
+// Original: wire signed [14:0] speech_audio_scaled = speech_audio >>> 6;
+// Explicit sign-extension 15 -> 16 (not relying on implicit signed widening):
+// if this ever zero-extended, negative samples would become large positives.
+wire signed [15:0] speech_audio_ext    = {speech_audio[14], speech_audio};
+wire signed [15:0] speech_audio_scaled = speech_audio_ext <<< 1;
+wire signed [17:0] audio_mix3 = $signed(snd_audio) + $signed(noise_audio) + $signed(speech_audio_scaled);
+wire audio_mix3_ovf = ~(&audio_mix3[17:15] | ~|audio_mix3[17:15]);
+assign audio = audio_mix3_ovf ?
+               (audio_mix3[17] ? 16'sh8000 : 16'sh7FFF) :
+               audio_mix3[15:0];
 
 endmodule

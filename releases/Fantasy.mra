@@ -60,10 +60,18 @@
         <part name="fantasy.ic7"/>
         <part name="fantasy.ic6"/>
 
-        <!-- sound ROMs at offset $12040 -->
+        <!-- sound ROMs at offset $12040 (6KB, ends $13840) -->
         <part name="fs_b_51.bin"/>
         <part name="fs_a_52.bin"/>
         <part name="fs_c_53.bin"/>
+
+        <!-- padding to $14000 -->
+        <part repeat="0x7C0">00</part>
+
+        <!-- speech ROMs (HD38880 PARCOR data): 6KB at offset $14000 -->
+        <part name="fs_d_7.bin"/>
+        <part name="fs_e_8.bin"/>
+        <part name="fs_f_11.bin"/>
 
     </rom>
 

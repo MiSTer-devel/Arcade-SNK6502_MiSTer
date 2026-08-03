@@ -64,9 +64,17 @@
         <part name="sk5_ic7.bin"/>
         <part name="sk5_ic6.bin"/>
 
-        <!-- sound ROMs: at offset $12040 -->
+        <!-- sound ROMs: at offset $12040 (4KB, ends $13040) -->
         <part name="sk4_ic51.bin"/>
         <part name="sk4_ic52.bin"/>
+
+        <!-- padding to $14000 -->
+        <part repeat="0xFC0">00</part>
+
+        <!-- speech ROMs (HD38880 PARCOR data, SK6 board): 6KB at offset $14000 -->
+        <part name="sk6_ic07.bin"/>
+        <part name="sk6_ic08.bin"/>
+        <part name="sk6_ic11.bin"/>
 
     </rom>
 
