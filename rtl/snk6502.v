@@ -775,7 +775,21 @@ wire [1:0] bg_pixel = bg_swap ? {bg_pixel_raw[0], bg_pixel_raw[1]} : bg_pixel_ra
 
 //wire [1:0] fg_pixel = {fg_p1_latch[7], fg_p0_latch[7]};
 wire [1:0] fg_pixel_raw = {fg_p1_latch[7], fg_p0_latch[7]};
-wire [1:0] fg_pixel = fantasy_nibbler_swap ?
+// FG-PLANE-SWAP-VANGUARD-2026-08-03: Vanguard's FG pen bits were inverted.
+// MAME gfx_vanguard uses charlayout_memory for the FG with planes { 0, 256*8*8 },
+// and MAME's FIRST plane entry is the pixel MSB => MSB = charram+0x000 (= our
+// charram_p0), LSB = charram+0x800 (= our charram_p1). But fg_pixel_raw is built
+// as {p1, p0} = {LSB, MSB} - inverted. The BG has the identical inversion and
+// already corrects it via bg_swap (which includes Vanguard); the FG swap only
+// covered Fantasy/Nibbler, so Vanguard's FG ran with pen bits 1<->2 swapped,
+// indexing the wrong palette entries. FG is the layer holding the HUD, the ships
+// and the minimap - exactly the regions the user reports as mis-coloured, and it
+// explains the minimap reading as background/line colours exchanged.
+// NOTE: Pioneer Balloon may have the same issue (its BG swaps but its FG does
+// not) - left alone here because it is untested; check it if its colours look off.
+// Original: wire [1:0] fg_pixel = fantasy_nibbler_swap ?
+wire fg_plane_swap = fantasy_nibbler_swap | (game_id == GID_VANGUARD);
+wire [1:0] fg_pixel = fg_plane_swap ?
     {fg_pixel_raw[0], fg_pixel_raw[1]} :   // swapped planes
     fg_pixel_raw;
 
