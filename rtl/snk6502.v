@@ -667,7 +667,32 @@ always @(posedge clk_master or posedge reset)
         pix_cnt <= pix_cnt + 3'd1;
 
 // ce_pix: one pulse per pixel = master clock / 2
-assign ce_pix = (clk_div[0] == 1'b1) && (clk_div != 4'd15);
+// CE-PIX-8PX-2026-08-03: the `&& (clk_div != 4'd15)` term DROPPED ONE PIXEL FROM
+// EVERY CHARACTER. clk_div free-runs 0..15 (16 master clocks per character), so
+// clk_div[0] alone gives the 8 pixel slots {1,3,5,7,9,11,13,15}. Excluding slot 15
+// left only 7 -> 224 of 256 pixels per line.
+//
+// The exclusion was presumably to avoid colliding with crtc_clken (= clk_div==15),
+// but that collision is harmless: the pixel shift-register block is
+// `if (crtc_clken) <load> else if (ce_pix) <shift>`, so at slot 15 the load wins and
+// no shift happens -- while the pixel value sampled at that instant is still the
+// PRE-load register content, i.e. exactly pixel 7. Excluding it simply discards it.
+//
+// **Under ROT90 the native raster's X axis is screen Y**, so losing the last pixel
+// of each character = losing the BOTTOM ROW of every tile on screen. That is the
+// user's "squares are missing their bottom lines" / compressed HUD rows, and it
+// affected BOTH layers because it is in the common pixel clock.
+//
+// MEASURED in verilator/ (snk6502_video_sim.v + mc6845_sim.v, real Vanguard CRTC
+// register values R0=0x2C R1=0x20 ... R9=0x07):
+//   before: 50176 visible px, 224 px/line, 32 chars -> 7 px per char
+//   after : 57344 visible px (== 256*224 expected), 256 px/line -> 8 px per char
+//
+// NOTE: this changes the pixel count per character from 7 to 8, so ENVELOPE_DELAY
+// (documented as "the depth of the pixel path in ce_pix cycles") may need a small
+// retune; adjust +/-1 if the image sits a pixel off after this lands.
+// Original: assign ce_pix = (clk_div[0] == 1'b1) && (clk_div != 4'd15);
+assign ce_pix = (clk_div[0] == 1'b1);
 
 wire [8:0] bg_tile_code = {charbank, vram1_vid_dout};
 
@@ -841,9 +866,26 @@ reg [ENVELOPE_DELAY_MAX-1:0] hsync_pipe;
 reg [ENVELOPE_DELAY_MAX-1:0] vblank_pipe;
 reg [ENVELOPE_DELAY_MAX-1:0] vsync_pipe;
 
-// Per-game pipe-tap index. Default = 13 (i.e. 14 stages, same as v2).
-// Vanguard starts at 0 — let the raw signals pass undelayed; tune up if needed.
-wire [3:0] env_idx = (game_id == GID_SASUKE) ? 4'd10 : 4'd13;
+// Per-game pipe-tap index (delay in ce_pix cycles = env_idx + 1).
+//
+// ENVELOPE-RETUNE-2026-08-03: bumped 13 -> 15 as the direct consequence of
+// CE-PIX-8PX-2026-08-03. The pixel path is a fixed number of CHARACTERS deep, but
+// this delay is counted in ce_pix cycles - and ce_pix went from 7 to 8 pulses per
+// character. A ~2-character-deep path was 2*7 = 14 stages, and is now 2*8 = 16,
+// i.e. env_idx 13 -> 15.
+//
+// Confirmed by HW symptom after the ce_pix fix: "2 rows of crap at the top, 2 rows
+// missing at the bottom" = the envelope opening 2 ce_pix too early, so real pixel
+// data starts 2 late and overruns the close. More delay is the fix, and the
+// magnitude (2) matches the predicted 14 -> 16 exactly.
+// (ROT90: screen rows are native pixel columns, so "rows" here are ce_pix cycles.)
+//
+// Original: wire [3:0] env_idx = (game_id == GID_SASUKE) ? 4'd10 : 4'd13;
+// NOTE: Sasuke's 10 was tuned under the old 7-px/char timing too and by the same
+// scaling wants ~11-12, but Sasuke/SatanSat have never run, so it is left alone
+// rather than guessed at. ENVELOPE_DELAY_MAX is 16, so index 15 is the last valid
+// tap - if more delay is ever needed, ENVELOPE_DELAY_MAX must grow first.
+wire [3:0] env_idx = (game_id == GID_SASUKE) ? 4'd10 : 4'd15;
 //wire [3:0] env_idx = 4'd13;
 
 always @(posedge clk_master) begin
