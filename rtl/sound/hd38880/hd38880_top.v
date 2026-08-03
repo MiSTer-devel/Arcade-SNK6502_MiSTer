@@ -177,6 +177,30 @@ module hd38880_top #(
         end
     end
 
+    // SPEECH-IDLE-MUTE-2026-08-03: parcor_lattice does NOT settle to zero when a
+    // phrase ends. Measured in the Verilator bench (verilator/hd38880_tb.cpp,
+    // Vanguard phrase 2): unpack_done asserts exactly at sample 8480 (= 53 frames
+    // x 160, correct), but the lattice output then holds a CONSTANT peak of 1408
+    // for the rest of the run - flat, no decay, block after block. Its de-emphasis
+    // / filter state simply retains its last value with zero excitation.
+    //
+    // At the old >>>6 mix that residue was 22/32768 (-63 dB, inaudible). After
+    // SPEECH-GAIN-2026-08-03 raised the mix 128x it became ~2816/32768 (-21 dB) =
+    // the continuous background hum the user reported on Vanguard.
+    //
+    // Fix here rather than in Fable's DSP: hold output at silence unless a phrase
+    // is actually playing. The real chip emits nothing when stopped, so this is
+    // also the faithful behaviour.
+    reg speaking;
+    always @(posedge clk) begin
+        if (reset)                          speaking <= 1'b0;
+        else if (ctrl_start)                speaking <= 1'b1;
+        else if (unpack_done || ctrl_stop)  speaking <= 1'b0;
+    end
+
+    wire signed [14:0] lattice_audio;
+    assign audio_out = speaking ? lattice_audio : 15'sd0;
+
     parcor_lattice #(.CLK_HZ(CLK_HZ)) lattice (
         .clk(clk), .rst(reset), .pause(pause),
         .k1_in(k1_lat),  .k2_in(k2_lat),  .k3_in(k3_lat),  .k4_in(k4_lat),  .k5_in(k5_lat),
@@ -184,7 +208,7 @@ module hd38880_top #(
         .amp_in(amp_lat), .pitch_in(pitch_lat), .frame_we(frame_we),
         .tri_src(ctrl_int1[3]), .loss_en(ctrl_int1[2]), .ten_stage(ctrl_int2[0]),
         .ext_pitch(8'd0), .ext_pitch_en(1'b0),
-        .audio_out(audio_out), .audio_stb()
+        .audio_out(lattice_audio), .audio_stb()
     );
 
 endmodule
