@@ -2,6 +2,7 @@
   <img src="Useful Information/Nibbler.png" width="800">
   <img src="Useful Information/Fantasy.png" width="800">
   <img src="Useful Information/Pioneer Balloon.png" width="800">
+  <img src="Useful Information/Vanguard.png" width="800">
 </p>
 
 <h1 align="center">SNK 6502 FPGA Core</h1>
