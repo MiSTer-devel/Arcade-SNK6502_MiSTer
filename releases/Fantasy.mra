@@ -11,7 +11,7 @@
     <region>World</region>
     <category>Shooter</category>
 
-    <!-- DIPs read at $2106. MAME INPUT_PORTS_START(fantasy) is just
+    <!-- MRA-DIPS-2026-08-03: DIPs read at $2106. MAME INPUT_PORTS_START(fantasy) is just
          PORT_INCLUDE(snk6502_generic_joy8way) with NO PORT_MODIFY, so the DSW is
          identical to Vanguard's. Defaults: Cabinet=0x01 (Upright),
          Coinage=0x02 (2C/1C), Lives=0x00 (3) => default byte 0x03.

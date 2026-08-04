@@ -11,7 +11,7 @@
     <region>World</region>
     <category>Shooter</category>
 
-    <!-- DIP switches read at $3106. From MAME snk6502.cpp INPUT_PORTS_START(
+    <!-- MRA-DIPS-2026-08-03: DIP switches read at $3106. From MAME snk6502.cpp INPUT_PORTS_START(
          snk6502_generic_joy8way) "DSW" - vanguard does not PORT_MODIFY it.
          MAME defaults: Cabinet=0x01 (Upright), Coinage=0x02 (2C/1C),
          Lives=0x00 (3), Coinage Bonus=0x00  =>  default byte 0x03.

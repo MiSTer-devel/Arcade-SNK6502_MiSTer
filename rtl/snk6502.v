@@ -439,10 +439,48 @@ mc6845 crtc(
     .RA     (crtc_ra)
 );
 
-wire [4:0] tile_col  = crtc_ma[4:0];
-wire [4:0] tile_row  = crtc_ma[9:5];
+// SASUKE-MA-OFFSET-2026-08-04: satansat-family one-character display offset.
+//
+// MEASURED (MAME debugger, user, 2026-08-04): Sasuke and Satan of Saturn program
+// an IDENTICAL 6845 register table to Vanguard except for ONE register pair -
+// the start address R12/R13. Vanguard = $03FF, satansat family = $0000. Every
+// geometry register (R0 h-total 45, R1 32 displayed, R6 28 rows, R9 8 lines/row)
+// matches exactly.
+//
+// Our fetch runs one character AHEAD of the displayed pixel, so the character at
+// the screen origin is VRAM[start + 1]:
+//   Vanguard  start $03FF (= -1 mod 1024) -> VRAM[0] at origin. Cancels exactly.
+//                                            HW-confirmed correct 2026-08-03.
+//   Sasuke    start $0000                 -> VRAM[1] at origin. Picture lands one
+//                                            character early, so the top tile row
+//                                            is pushed off the top edge (ROT90:
+//                                            native X is the screen's vertical).
+// HW symptom (user, 2026-08-04): "top of the screen is missing an entire tile row
+// worth of data", content SHIFTED with no dead band - a fetch-address signature,
+// not an envelope one. Both games in the family show it identically.
+//
+// MAME cannot arbitrate this: it ignores R12/R13 entirely and renders the tilemap
+// from its own scan (TILEMAP_SCAN_ROWS, tile_index 0 at the origin, no scrolldx),
+// so the whole question is invisible there. Vanguard's $03FF is the real-hardware
+// idiom of programming -1 to cancel a 1-character fetch pipeline; the earlier
+// satansat board evidently doesn't need it, and our shared pipeline does.
+//
+// Subtracting 1 from MA for this family makes it fetch EXACTLY as if it had
+// programmed $03FF like Vanguard - i.e. it reuses the path already proven correct
+// on hardware rather than introducing a new tuned constant. Applied once at the
+// source so the FG (tile_addr) and BG (bg_col/bg_row) planes stay in lockstep;
+// the BG's separate `+1` further down is the SCROLL-FINE-X lookahead and is
+// deliberately untouched.
+wire        ma_needs_start_adj = (game_id <= GID_SATANSAT);
+wire [9:0]  crtc_ma_disp = crtc_ma[9:0] - {9'd0, ma_needs_start_adj};
+
+// Original: wire [4:0] tile_col  = crtc_ma[4:0];
+// Original: wire [4:0] tile_row  = crtc_ma[9:5];
+// Original: wire [9:0] tile_addr = crtc_ma[9:0];
+wire [4:0] tile_col  = crtc_ma_disp[4:0];
+wire [4:0] tile_row  = crtc_ma_disp[9:5];
 wire [2:0] tile_line = crtc_ra[2:0];
-wire [9:0] tile_addr = crtc_ma[9:0];
+wire [9:0] tile_addr = crtc_ma_disp;
 
 // BG layer: apply scroll registers
 //
@@ -885,7 +923,17 @@ reg [ENVELOPE_DELAY_MAX-1:0] vsync_pipe;
 // scaling wants ~11-12, but Sasuke/SatanSat have never run, so it is left alone
 // rather than guessed at. ENVELOPE_DELAY_MAX is 16, so index 15 is the last valid
 // tap - if more delay is ever needed, ENVELOPE_DELAY_MAX must grow first.
-wire [3:0] env_idx = (game_id == GID_SASUKE) ? 4'd10 : 4'd15;
+//
+// SASUKE-ENVELOPE-2026-08-04: Sasuke's special case DELETED - it now takes the
+// same tap as every other game. Sasuke boots as of the 08-03 MRA vector fix, and
+// HW shows misalignment on the ROT90 vertical axis (= the ce_pix axis).
+// Justification for one shared value, from source, not from scaling the old 10:
+// the pixel path (crtc_clken load -> ce_pix shift latches) contains NO
+// game_id-dependent stage. Every game_id use in the pixel path is combinational
+// (bg_swap / fg_plane_swap / ss_*_prom_addr). So the pipeline is exactly as deep
+// for Sasuke as for Vanguard, where 15 is HW-confirmed correct.
+// Original: wire [3:0] env_idx = (game_id == GID_SASUKE) ? 4'd10 : 4'd15;
+wire [3:0] env_idx = 4'd15;
 //wire [3:0] env_idx = 4'd13;
 
 always @(posedge clk_master) begin
@@ -1112,7 +1160,56 @@ always @(posedge clk_master or posedge reset)
     else if (snd_wr0)
         bomb_enable <= cpu_dout[7];
 
-wire bomb_trigger = bomb_enable;
+// SN76477-NOISE-2026-08-03: latch the whole of sound port 0 so the SN76477 legs
+// can see bits 5/6 as LEVELS (the ENABLE pin is level driven, not edge).
+reg [7:0] snd_p0_latch;
+always @(posedge clk_master or posedge reset)
+    if (reset)        snd_p0_latch <= 8'h00;
+    else if (snd_wr0) snd_p0_latch <= cpu_dout;
+
+wire game_vg = (game_id == GID_VANGUARD);
+wire game_fy = (game_id == GID_FANTASY);
+
+// MAME vanguard_sound_device::sound_w port 0 (snk6502_a.cpp:577-617):
+//   bit 5 SHOT A -> sn76477.1  (was: NOT WIRED TO ANYTHING - silent gun)
+//   bit 6 SHOT B -> sn76477.2  (was: NOT WIRED TO ANYTHING)
+//   bit 7 BOMB   -> "explsion" sample; left on the existing one-shot below.
+// MAME fantasy_sound_device::sound_w port 0 (:762-795):
+//   bit 7 BOMB   -> sn76477.1 -> discrete, driven as a LEVEL
+//                   (m_discrete->write(FANTASY_BOMB_EN, data & 0x80))
+wire shot_a_gate  = game_vg & snd_p0_latch[5];
+wire shot_b_gate  = game_vg & snd_p0_latch[6];
+wire fy_bomb_gate = game_fy & snd_p0_latch[7];
+
+// Fantasy's bomb now comes from the modelled SN76477 leg instead of the old
+// fixed 26ms one-shot, which fired once instead of sustaining while the bit is
+// held. Every other game keeps the previous behaviour untouched (Nibbler is
+// HW-confirmed good and must not move).
+wire bomb_trigger = bomb_enable & ~game_fy;
+
+// ---- SN76477 leg A: 470k noise clock (3081.7 Hz) + 1.5M/220pF filter --------
+// Shared by Vanguard SHOT A and Fantasy BOMB: identical component values in
+// MAME, and they belong to different games so the gates can never both be high.
+wire signed [15:0] sn_lo_audio;
+sn76477_noise #(
+    .CLK_HZ(11_289_000), .NOISE_HZ(3082), .FILTER_EN(1'b1), .AMPLITUDE(6000)
+) sn76477_lo (
+    .clk(clk_master), .reset(reset), .pause(pause),
+    .gate(shot_a_gate | fy_bomb_gate),
+    .audio_out(sn_lo_audio)
+);
+
+// ---- SN76477 leg B: 10k noise clock (97493 Hz), NO filter cap (C=0) ---------
+// Vanguard SHOT B only. MAME routes this at 0.25 vs SHOT A's 0.50, hence half
+// the amplitude.
+wire signed [15:0] sn_hi_audio;
+sn76477_noise #(
+    .CLK_HZ(11_289_000), .NOISE_HZ(97493), .FILTER_EN(1'b0), .AMPLITUDE(3000)
+) sn76477_hi (
+    .clk(clk_master), .reset(reset), .pause(pause),
+    .gate(shot_b_gate),
+    .audio_out(sn_hi_audio)
+);
 
 wire signed [15:0] noise_audio;
 
@@ -1145,10 +1242,16 @@ snk6502_noise noise_gen(
 // if this ever zero-extended, negative samples would become large positives.
 wire signed [15:0] speech_audio_ext    = {speech_audio[14], speech_audio};
 wire signed [15:0] speech_audio_scaled = speech_audio_ext <<< 1;
-wire signed [17:0] audio_mix3 = $signed(snd_audio) + $signed(noise_audio) + $signed(speech_audio_scaled);
-wire audio_mix3_ovf = ~(&audio_mix3[17:15] | ~|audio_mix3[17:15]);
+// SN76477-NOISE-2026-08-03: two more sources in the sum, so the accumulator is
+// widened 18 -> 20 bits. Five signed 16-bit terms peak at 5*32768 = 163840,
+// which needs 19 bits signed; 20 gives a bit of headroom. The saturation test
+// widens with it.
+wire signed [19:0] audio_mix3 = $signed(snd_audio) + $signed(noise_audio)
+                              + $signed(speech_audio_scaled)
+                              + $signed(sn_lo_audio) + $signed(sn_hi_audio);
+wire audio_mix3_ovf = ~(&audio_mix3[19:15] | ~|audio_mix3[19:15]);
 assign audio = audio_mix3_ovf ?
-               (audio_mix3[17] ? 16'sh8000 : 16'sh7FFF) :
+               (audio_mix3[19] ? 16'sh8000 : 16'sh7FFF) :
                audio_mix3[15:0];
 
 endmodule
