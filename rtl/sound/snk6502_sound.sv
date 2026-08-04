@@ -16,6 +16,14 @@ module snk6502_snd (
     // pballoon_sound_device subclass fantasy_sound_device and inherit sound_w),
     // so ONLY Vanguard needs splitting out. See Claude/vanguard_audio_audit_2026-08-03.md
     input  wire                 game_is_vanguard,
+    // SASUKE-SATANSAT-SOUND-2026-08-03: these two ALSO have their own MAME sound
+    // devices (sasuke_sound_device::sound_w :970, satansat_sound_device::sound_w
+    // :1119) on a DIFFERENT port pair -- $B000/$B001, which was not decoded at all
+    // before, so no sound command ever reached this module for either game.
+    input  wire                 game_is_sasuke,
+    input  wire                 game_is_satansat,
+    input  wire                 ss_wr0,       // $B000 write strobe (1 clk)
+    input  wire                 ss_wr1,       // $B001 write strobe (1 clk)
     input  wire        [7:0]    snd_rom_data, // data from external sound ROM (combinatorial or 1-cycle registered)
     output reg         [12:0]   snd_rom_addr, // address to sound ROM
     output reg  signed [15:0]   audio_out,    // 16-bit signed PCM output (sum of 3 channels)
@@ -43,9 +51,13 @@ module snk6502_snd (
     localparam FRAC_ONE    = 32'd65536;
 
     // Per-channel state
-    reg [7:0]  ch_offset [0:2];
+    // SASUKE-SATANSAT-SOUND-2026-08-03: offset/mask widened 8 -> 9 bits. SatanSat
+    // does set_channel_base(1, 0x0800|..., **0x1ff**) (snk6502_a.cpp:1157) - a 9-bit
+    // mask that cannot be held in 8 bits. All other games use 0xff, which is
+    // unchanged by the widening.
+    reg [8:0]  ch_offset [0:2];
     reg [12:0] ch_base   [0:2];
-    reg [7:0]  ch_mask   [0:2];
+    reg [8:0]  ch_mask   [0:2];
     reg        ch_mute   [0:2];
 
     // Mirror ch0 mute to top-level — drives IN port custom bit on Vanguard / Sasuke / SatanSat.
@@ -70,6 +82,7 @@ module snk6502_snd (
     reg [4:0] wf_state;   // 0-31: first 16 = ch0, next 16 = ch1
     reg       wf_busy;
     reg [3:0] ch0_wf_mask, ch1_wf_mask;
+    reg [7:0] ss_last_p0;   // SASUKE-SATANSAT-SOUND-2026-08-03: m_last_port1 equivalent
 
     // Moved declarations for always-block variables (required for synthesis)
     reg [7:0] idx;
@@ -95,17 +108,31 @@ module snk6502_snd (
     // ch1 is a plain (data >> 4) on both.
     wire [3:0] ch0_mask_fantasy  = ((wf_data & 8'h09) | ((wf_data & 8'h02) << 1) | ((wf_data & 8'h04) >> 1)) & 8'h0F;
     wire [3:0] ch0_mask_vanguard = ((wf_data & 8'h03) | ((wf_data & 8'h04) << 1) | ((wf_data & 8'h08) >> 1)) & 8'h0F;
-    wire [3:0] ch0_mask_calc     = game_is_vanguard ? ch0_mask_vanguard : ch0_mask_fantasy;
+    // SASUKE-SATANSAT-SOUND-2026-08-03: these two feed the waveform from different
+    // bit-fields, and via DIFFERENT builders (sasuke_build_waveform :202 for ch0,
+    // satansat_build_waveform :220 for ch1).
+    //   sasuke   (:1028): sasuke_build_waveform((data & 0x0e) >> 1)     [port $B001]
+    //   satansat (:1141): sasuke_build_waveform((data & 0x70) >> 4)     [port $B000]
+    //   satansat (:1144): satansat_build_waveform((data & 0x80) >> 7)   [port $B000]
+    wire [3:0] ch0_mask_sasuke   = {1'b0,  wf_data[3:1]};
+    wire [3:0] ch0_mask_satansat = {1'b0,  wf_data[6:4]};
+    wire [3:0] ch1_mask_satansat = {3'b000, wf_data[7]};
+    wire       ss_wf_mode        = game_is_sasuke | game_is_satansat;
+
+    wire [3:0] ch0_mask_calc     = game_is_sasuke   ? ch0_mask_sasuke   :
+                                   game_is_satansat ? ch0_mask_satansat :
+                                   game_is_vanguard ? ch0_mask_vanguard : ch0_mask_fantasy;
+    wire [3:0] ch1_mask_calc     = game_is_satansat ? ch1_mask_satansat : wf_data[7:4];
 
     // VANGUARD-SOUND-2026-08-03: sound0_stop_on_rollover. MAME sets it per game on
     // every port-0 write: vanguard=1 (:594), fantasy=0 (:779). Constant per game, so
     // tied rather than latched. When set, ch0 self-mutes as its offset wraps to 0
     // (:555) - i.e. Vanguard music is ONE-SHOT. Without this ch0 loops forever.
-    wire       sound0_stop_on_rollover = game_is_vanguard;
+    wire       sound0_stop_on_rollover = game_is_vanguard | game_is_sasuke | game_is_satansat;
 
     // Post-increment ch0 offset, shared by the music tick and the rollover test so
     // both see exactly the same value (MAME increments, masks, THEN tests == 0).
-    wire [7:0] ch0_offset_next = (ch_offset[0] + 8'd1) & ch_mask[0];
+    wire [8:0] ch0_offset_next = (ch_offset[0] + 9'd1) & ch_mask[0];
 
     // Phase increment LUT
     // Computed as round(1048576 * 65536 / (526 * d)) where d = 256 - period
@@ -311,13 +338,36 @@ module snk6502_snd (
             wf_state <= 5'd0;
         end else if (wf_wr && !wf_busy) begin
             ch0_wf_mask <= ch0_mask_calc;
-            ch1_wf_mask <= wf_data[7:4];
+            ch1_wf_mask <= ch1_mask_calc;
             wf_busy  <= 1'b1;
             wf_state <= 5'd0;
         end else if (wf_busy) begin
             // compute waveform entry (exact MAME build_waveform formula)
             wf_m = wf_state[4] ? ch1_wf_mask : ch0_wf_mask;
             wf_j = wf_state[3:0];
+            if (ss_wf_mode) begin
+                // SASUKE-SATANSAT-SOUND-2026-08-03: sasuke_build_waveform (ch0, :202)
+                // and satansat_build_waveform (ch1, :220). These use PLAIN 0/1 bit
+                // weights (not the generic 0/2/4/8), have NO "<<1 if sum<16"
+                // normalisation, and scale by 65535/16 = 4095 instead of
+                // 65535/160 = 409. Sasuke never unmutes ch1, so building ch1 with the
+                // satansat formula is harmless there.
+                if (wf_state[4] == 1'b0) begin
+                    wf_bit0 = {4'd0, wf_m[0]};   // sasuke: bit0=BIT(mask,0)
+                    wf_bit1 = {4'd0, wf_m[1]};   //         bit1=BIT(mask,1)
+                    wf_bit2 = 5'd1;              //         bit2=1 (constant)
+                    wf_bit3 = {4'd0, wf_m[2]};   //         bit3=BIT(mask,2)
+                end else begin
+                    wf_bit0 = 5'd1;              // satansat: bit0..2 = 1
+                    wf_bit1 = 5'd1;
+                    wf_bit2 = 5'd1;
+                    wf_bit3 = {4'd0, wf_m[0]};   //           bit3 = BIT(mask,0)
+                end
+                wf_base_val = (wf_bit0 + wf_bit1 + wf_bit2 + wf_bit3 + 5'd1) / 5'd2;
+                wf_data_val = (wf_j[0] ? wf_bit0 : 5'd0) + (wf_j[1] ? wf_bit1 : 5'd0)
+                            + (wf_j[2] ? wf_bit2 : 5'd0) + (wf_j[3] ? wf_bit3 : 5'd0);
+                ch_form[wf_state[4]][wf_j] <= ($signed(wf_data_val) - $signed(wf_base_val)) * 16'sd4095;
+            end else begin
             wf_bit3 = (wf_m[0] || wf_m[1]) ? 5'd8 : wf_m[2] ? 5'd4 : wf_m[3] ? 5'd2 : 5'd0;
             wf_bit2 = wf_m[2] ? 5'd8 : (wf_m[1] || wf_m[3]) ? 5'd4 : 5'd0;
             wf_bit1 = wf_m[3] ? 5'd8 : wf_m[2] ? 5'd4 : wf_m[1] ? 5'd2 : 5'd0;
@@ -331,6 +381,7 @@ module snk6502_snd (
             wf_base_val = (wf_bit0 + wf_bit1 + wf_bit2 + wf_bit3 + 5'd1) / 5'd2;
             wf_data_val = (wf_j[0] ? wf_bit0 : 5'd0) + (wf_j[1] ? wf_bit1 : 5'd0) + (wf_j[2] ? wf_bit2 : 5'd0) + (wf_j[3] ? wf_bit3 : 5'd0);
             ch_form[wf_state[4]][wf_j] <= ($signed(wf_data_val) - $signed(wf_base_val)) * 16'sd409;
+            end
             wf_state <= wf_state + 5'd1;
             if (wf_state == 5'd31) begin
                 wf_busy <= 1'b0;
@@ -349,7 +400,7 @@ module snk6502_snd (
             ch_mute[1]   <= 1'b1;
             ch_mute[2]   <= 1'b1;
             ch_offset[0] <= 0; ch_offset[1] <= 0; ch_offset[2] <= 0;
-            ch_mask[0]   <= 8'hff; ch_mask[1] <= 8'hff; ch_mask[2] <= 8'hff;
+            ch_mask[0]   <= 9'h0ff; ch_mask[1] <= 9'h0ff; ch_mask[2] <= 9'h0ff;
             // WIDTH-FIX-2026-08-03: these were 11'h0000/11'h0800/11'h1000, but ch_base
             // is reg [12:0]. 0x800 and 0x1000 do NOT fit in 11 bits, so both reset
             // values silently truncated to 0. Caught by verilator --lint-only.
@@ -359,6 +410,7 @@ module snk6502_snd (
             ch_base[1]   <= 13'h0800;
             ch_base[2]   <= 13'h1000;          // ch2 starts at $1000 (high bits set on writes)
             wf_wr        <= 1'b0;              // rebuild trigger must start cleared (was power-up undefined)
+            ss_last_p0   <= 8'h00;
 
             // Channel 2 is always a square wave (MAME special case). Initialize at reset.
             // ch0/ch1 will be rebuilt on first wr2 (MAME build_waveform called later).
@@ -368,13 +420,13 @@ module snk6502_snd (
         end else begin
             if (music_tick && !pause) begin      // HALT: freeze sequencer offset on pause
                 ch_offset[0] <= ch0_offset_next;
-                ch_offset[1] <= (ch_offset[1] + 1'd1) & ch_mask[1];
-                ch_offset[2] <= (ch_offset[2] + 1'd1) & ch_mask[2];
+                ch_offset[1] <= (ch_offset[1] + 9'd1) & ch_mask[1];
+                ch_offset[2] <= (ch_offset[2] + 9'd1) & ch_mask[2];
                 // MAME sound_stream_update (:555): after ALL offsets advance,
                 //   if (tone_channels[0].offset == 0 && sound0_stop_on_rollover)
                 //       tone_channels[0].mute = 1;
                 // Vanguard only. Note it tests the POST-increment offset.
-                if (sound0_stop_on_rollover && (ch0_offset_next == 8'd0))
+                if (sound0_stop_on_rollover && (ch0_offset_next == 9'd0))
                     ch_mute[0] <= 1'b1;
             end
             if (wr0) begin
@@ -434,6 +486,71 @@ module snk6502_snd (
                 // fantasy offset 3 – ch2 base high bits ($1000 region)
                 // MAME: 0x1000 | ((data & 0x70) << 4)  → bits [6:4] land at addr[10:8]
                 ch_base[2]   <= 13'h1000 | {sound_port3[6:4], 8'h00};
+            end
+
+            // ---- SASUKE / SATANSAT sound ports ($B000/$B001) ---------------------
+            // SASUKE-SATANSAT-SOUND-2026-08-03. These were NOT DECODED AT ALL before,
+            // so neither game could make any sound regardless of the rest of this
+            // module. MAME: sasuke_sound_device::sound_w (:970),
+            // satansat_sound_device::sound_w (:1119). All port data arrives on
+            // sound_port0 (every sound_portN is tied to cpu_dout at the instance).
+            //
+            // NOT MODELLED (deliberate, flagged): the sample channels (sasuke
+            // hit/boss-start/shot/boss-attack on port0 bits 0-3; satansat port0 bit2)
+            // and the SN76477 analog path (satansat port0 bit1). Those need sample
+            // playback / an SN76477 model, neither of which exists in this core.
+            if (ss_wr0) begin
+                if (game_is_sasuke) begin
+                    // :997-1005 - bit 7 is the ch0 mute control, EDGE sensitive.
+                    // Rising: reset_offset(0) THEN unmute_channel(0). MAME notes this
+                    // is the only game needing the explicit offset reset on unmute.
+                    if (sound_port0[7] & ~ss_last_p0[7]) begin
+                        ch_offset[0] <= 0;
+                        ch_mute[0]   <= 1'b0;
+                    end
+                    else if (~sound_port0[7] & ss_last_p0[7]) begin
+                        ch_mute[0]   <= 1'b1;   // mute_channel(0) also zeroes offset
+                        ch_offset[0] <= 0;
+                    end
+                end else begin
+                    // satansat :1137-1144
+                    if (sound_port0[3]) begin   // bit3 -> mute_channel(0)
+                        ch_mute[0]   <= 1'b1;
+                        ch_offset[0] <= 0;
+                    end
+                    // bits 6:4 -> ch0 waveform, bit 7 -> ch1 waveform (both from port0)
+                    wf_data <= sound_port0;
+                    wf_wr   <= 1'b1;
+                end
+                ss_last_p0 <= sound_port0;
+            end
+
+            if (ss_wr1) begin
+                if (game_is_sasuke) begin
+                    // :1023-1028  base = 0x0000 | ((data & 0x70) << 4) -> data[6:4] at addr[10:8]
+                    ch_base[0] <= {2'b00, sound_port0[6:4], 8'h00};
+                    wf_data    <= sound_port0;   // bits 3:1 -> sasuke_build_waveform
+                    wf_wr      <= 1'b1;
+                end else begin
+                    // satansat :1156-1167
+                    // ch0 base = 0x0000 | ((data & 0x0e) << 7) -> data[3:1] at addr[10:8]
+                    ch_base[0] <= {2'b00, sound_port0[3:1], 8'h00};
+                    // ch1 base = 0x0800 | ((data & 0x60) << 4) -> data[6:5] at addr[10:9]
+                    // and mask 0x1ff (the reason ch_mask/ch_offset are 9 bits).
+                    ch_base[1] <= 13'h0800 | {2'b00, sound_port0[6:5], 9'd0};
+                    ch_mask[1] <= 9'h1ff;
+                    if (sound_port0[0]) begin                  // unmute_channel(0)
+                        if (ch_mute[0]) ch_offset[0] <= 0;
+                        ch_mute[0] <= 1'b0;
+                    end
+                    if (sound_port0[4]) begin                  // unmute_channel(1)
+                        if (ch_mute[1]) ch_offset[1] <= 0;
+                        ch_mute[1] <= 1'b0;
+                    end else begin                             // mute_channel(1)
+                        ch_mute[1]   <= 1'b1;
+                        ch_offset[1] <= 0;
+                    end
+                end
             end
         end
     end

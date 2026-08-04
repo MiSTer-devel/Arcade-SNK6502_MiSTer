@@ -1067,6 +1067,14 @@ wire snd_wr2 = io_wr & ((cpu_addr == 16'h2102) |
                         (cpu_addr == 16'hB102));
 wire snd_wr3 = io_wr &  (cpu_addr == 16'h2103);  // Fantasy/Nibbler only
 
+// SASUKE-SATANSAT-SOUND-2026-08-03: Sasuke/SatanSat put their sound port at
+// $B000/$B001 (MAME sasuke_map:347 / satansat_map:367), which was NOT DECODED
+// ANYWHERE - so no sound command from either game ever reached snk6502_snd.
+// Gated on game_id <= GID_SATANSAT so it cannot clash with Pioneer Balloon, whose
+// CRTC lives at those same addresses.
+wire ss_snd_wr0 = io_wr & (game_id <= GID_SATANSAT) & (cpu_addr == 16'hB000);
+wire ss_snd_wr1 = io_wr & (game_id <= GID_SATANSAT) & (cpu_addr == 16'hB001);
+
 // ---------------------------------------------------------------------------
 // SNK6502 tone generator
 // ---------------------------------------------------------------------------
@@ -1087,6 +1095,10 @@ snk6502_snd sound(
     // VANGUARD-SOUND-2026-08-03: selects MAME's vanguard_sound_device semantics
     // instead of fantasy_sound_device's. See Claude/vanguard_audio_audit_2026-08-03.md
     .game_is_vanguard (game_id == GID_VANGUARD),
+    .game_is_sasuke   (game_id == GID_SASUKE),
+    .game_is_satansat (game_id == GID_SATANSAT),
+    .ss_wr0           (ss_snd_wr0),
+    .ss_wr1           (ss_snd_wr1),
     .snd_rom_data  (snd_rom_dout),
     .snd_rom_addr  (snd_rom_addr),
     .audio_out     (snd_audio),
