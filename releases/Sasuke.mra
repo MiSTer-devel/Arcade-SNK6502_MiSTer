@@ -39,10 +39,18 @@
         <!-- $8800: sc10 (2KB) -->
         <part name="sc10"/>
 
-        <!-- $9000-$EFFF: padding -->
-        <part repeat="0x6000">00</part>
+        <!-- MRA-VECTOR-FIX-2026-08-03: this padding was 0x6000, which put the sc8
+             vector mirror at $F000 instead of $F800 (the comment said $F800 but the
+             arithmetic did not). MAME: ROM_RELOAD(0xf800, 0x0800) on sc8, and
+             sasuke_map has map(0xf800,0xffff).rom(). With sc8 at $F000 the 6502
+             reset/IRQ vectors at $FFFA-$FFFF read as 0x00 -> jump to $0000 ->
+             BLACK SCREEN. It also left the whole maincpu region 0x800 short, so
+             gfx1/proms/sound were each shifted down by 0x800 as well.
+             $9000 + 0x6800 = $F800. -->
+        <!-- $9000-$F7FF: padding -->
+        <part repeat="0x6800">00</part>
 
-        <!-- $F800: sc8 mirror for reset/interrupt vectors -->
+        <!-- $F800: sc8 mirror for reset/interrupt vectors (ends at $10000) -->
         <part name="sc8"/>
 
         <!-- gfx1: 4KB at offset $10000 -->

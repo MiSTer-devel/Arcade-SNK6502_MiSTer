@@ -41,15 +41,29 @@
         <!-- $9000: ss11 (2KB) -->
         <part name="ss11"/>
 
-        <!-- $F800: zarz129.16 mirror for reset/interrupt vectors -->
+        <!-- MRA-VECTOR-FIX-2026-08-03: this padding was MISSING ENTIRELY. After ss11
+             the offset is $9800, so the zarz129.16 vector mirror landed at $9800
+             instead of $F800, and the whole file totalled $0D040 when the maincpu
+             region alone must reach $10000. The 6502 vectors at $FFFA-$FFFF read as
+             0x00 -> jump to $0000 -> BLACK SCREEN, and gfx1/proms/sound were all
+             misplaced too. MAME: ROM_RELOAD(0xf800,0x0800) on zarz129.16, and
+             satansat_map has map(0xf800,0xffff).rom(). $9800 + 0x6000 = $F800. -->
+        <!-- $9800-$F7FF: padding -->
+        <part repeat="0x6000">00</part>
+
+        <!-- $F800: zarz129.16 mirror for reset/interrupt vectors (ends at $10000) -->
         <part name="zarz129.16"/>
 
-        <!-- gfx1: 4KB at offset $10000 -->
-        <!-- plane 0: zarz135.73 (2KB)  -->
+        <!-- gfx1: 8KB window at $10000. rtl/snk6502.v splits the planes on
+             dn_addr[12]: plane0 = $10000-$10FFF, plane1 = $11000-$11FFF. So each
+             2KB plane must be padded to 4KB - the planes were previously packed
+             back-to-back, putting plane 1 at $10800 where nothing reads it. -->
+        <!-- plane 0: zarz135.73 (2KB) padded to 4KB -->
         <part name="zarz135.73"/>
-        <!-- plane 1: zarz136.75 (2KB)  -->
+        <part repeat="0x0800">00</part>
+        <!-- plane 1: zarz136.75 (2KB) padded to 4KB -->
         <part name="zarz136.75"/>
-        <part repeat="0x1000">00</part>
+        <part repeat="0x0800">00</part>
 
         <!-- proms: 32 bytes at offset $12000 (only one PROM for sasuke) -->
         <part name="zarz138.03"/>
