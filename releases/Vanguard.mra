@@ -34,50 +34,56 @@
         <part repeat="0x4000">00</part>
 
         <!-- $4000: ic07 (4KB) -->
-        <part name="sk4_ic07.bin"/>
+        <part name="sk4_ic07.bin" crc="6a29e354"/>
 
         <!-- $5000: ic08 (4KB) -->
-        <part name="sk4_ic08.bin"/>
+        <part name="sk4_ic08.bin" crc="302bba54"/>
 
         <!-- $6000: ic09 (4KB) -->
-        <part name="sk4_ic09.bin"/>
+        <part name="sk4_ic09.bin" crc="424755f6"/>
 
         <!-- $7000: ic10 (4KB) -->
-        <part name="sk4_ic10.bin"/>
+        <part name="sk4_ic10.bin" crc="54603274"/>
 
         <!-- $8000: ic13 (4KB) -->
-        <part name="sk4_ic13.bin"/>
+        <part name="sk4_ic13.bin" crc="fde157d0"/>
 
         <!-- $9000: ic14 (4KB) -->
-        <part name="sk4_ic14.bin"/>
+        <part name="sk4_ic14.bin" crc="0d5b47d0"/>
 
         <!-- $A000: ic15 (4KB) -->
-        <part name="sk4_ic15.bin"/>
+        <part name="sk4_ic15.bin" crc="8549b8f8"/>
 
         <!-- $B000: ic16 (4KB) -->
-        <part name="sk4_ic16.bin"/>
+        <part name="sk4_ic16.bin" crc="062e0be2"/>
 
         <!-- $C000-$EFFF: padding (12KB) -->
         <part repeat="0x3000">00</part>
 
         <!-- $F000: ic13 again (mirror for reset/interrupt vectors) -->
-        <part name="sk4_ic13.bin"/>
+        <part name="sk4_ic13.bin" crc="fde157d0"/>
 
         <!-- gfx1: 4KB at offset $10000 (Vanguard is small GFX) -->
         <!-- plane 0: ic50 (2KB) padded to 4KB -->
-        <part name="sk5_ic50.bin"/>
+        <part name="sk5_ic50.bin" crc="e7d4315b"/>
         <part repeat="0x0800">00</part>
         <!-- plane 1: ic51 (2KB) padded to 4KB -->
-        <part name="sk5_ic51.bin"/>
+        <part name="sk5_ic51.bin" crc="96e87858"/>
         <part repeat="0x0800">00</part>
 
         <!-- proms: 64 bytes at offset $12000 -->
-        <part name="sk5_ic7.bin"/>
-        <part name="sk5_ic6.bin"/>
+        <part name="sk5_ic7.bin" crc="ad782a73"/>
+        <part name="sk5_ic6.bin" crc="7dc9d450"/>
 
+<<<<<<< HEAD
+        <!-- sound ROMs: at offset $12040 -->
+        <part name="sk4_ic51.bin" crc="d2a64006"/>
+        <part name="sk4_ic52.bin" crc="cc4a0b6f"/>
+=======
         <!-- sound ROMs: at offset $12040 (4KB, ends $13040) -->
         <part name="sk4_ic51.bin"/>
         <part name="sk4_ic52.bin"/>
+>>>>>>> 9540935c02c9d8a0bef6a53b315a2bb05bf7268e
 
         <!-- padding to $14000 -->
         <part repeat="0xFC0">00</part>

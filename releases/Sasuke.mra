@@ -18,56 +18,48 @@
         <part repeat="0x4000">00</part>
 
         <!-- $4000: sc1 (2KB) -->
-        <part name="sc1"/>
+        <part name="sc1" crc="34cbbe03"/>
         <!-- $4800: sc2 (2KB) -->
-        <part name="sc2"/>
+        <part name="sc2" crc="38cc14f0"/>
         <!-- $5000: sc3 (2KB) -->
-        <part name="sc3"/>
+        <part name="sc3" crc="54c41285"/>
         <!-- $5800: sc4 (2KB) -->
-        <part name="sc4"/>
+        <part name="sc4" crc="23edafcf"/>
         <!-- $6000: sc5 (2KB) -->
-        <part name="sc5"/>
+        <part name="sc5" crc="ca410e4f"/>
         <!-- $6800: sc6 (2KB) -->
-        <part name="sc6"/>
+        <part name="sc6" crc="80406afb"/>
         <!-- $7000: sc7 (2KB) -->
-        <part name="sc7"/>
+        <part name="sc7" crc="04d0f104"/>
         <!-- $7800: sc8 (2KB) -->
-        <part name="sc8"/>
+        <part name="sc8" crc="0219104b"/>
 
         <!-- $8000: sc9 (2KB) -->
-        <part name="sc9"/>
+        <part name="sc9" crc="d6ff889a"/>
         <!-- $8800: sc10 (2KB) -->
-        <part name="sc10"/>
+        <part name="sc10" crc="19df6b9a"/>
 
-        <!-- MRA-VECTOR-FIX-2026-08-03: this padding was 0x6000, which put the sc8
-             vector mirror at $F000 instead of $F800 (the comment said $F800 but the
-             arithmetic did not). MAME: ROM_RELOAD(0xf800, 0x0800) on sc8, and
-             sasuke_map has map(0xf800,0xffff).rom(). With sc8 at $F000 the 6502
-             reset/IRQ vectors at $FFFA-$FFFF read as 0x00 -> jump to $0000 ->
-             BLACK SCREEN. It also left the whole maincpu region 0x800 short, so
-             gfx1/proms/sound were each shifted down by 0x800 as well.
-             $9000 + 0x6800 = $F800. -->
-        <!-- $9000-$F7FF: padding -->
-        <part repeat="0x6800">00</part>
+        <!-- $9000-$EFFF: padding -->
+        <part repeat="0x6000">00</part>
 
-        <!-- $F800: sc8 mirror for reset/interrupt vectors (ends at $10000) -->
-        <part name="sc8"/>
+        <!-- $F800: sc8 mirror for reset/interrupt vectors -->
+        <part name="sc8" crc="0219104b"/>
 
         <!-- gfx1: 4KB at offset $10000 -->
         <!-- plane 0: mcs_c (2KB) padded to 4KB -->
-        <part name="mcs_c"/>
+        <part name="mcs_c" crc="aff9743d"/>
         <part repeat="0x0800">00</part>
         <!-- plane 1: mcs_d (2KB) padded to 4KB -->
-        <part name="mcs_d"/>
+        <part name="mcs_d" crc="9c805120"/>
         <part repeat="0x0800">00</part>
 
         <!-- proms: 32 bytes at offset $12000 (only one PROM for sasuke) -->
-        <part name="sasuke.clr"/>
+        <part name="sasuke.clr" crc="b70f34c1"/>
         <!-- pad to 64 bytes -->
         <part repeat="0x0020">00</part>
 
         <!-- sound ROMs at offset $12040 -->
-        <part name="sc11"/>
+        <part name="sc11" crc="24a0e121"/>
 
     </rom>
 

@@ -32,52 +32,59 @@
         <part repeat="0x3000">00</part>
 
         <!-- $3000: ic12 (4KB) -->
-        <part name="ic12.cpu"/>
+        <part name="ic12.cpu" crc="22cb2249"/>
 
         <!-- $4000: ic07 (4KB) -->
-        <part name="ic07.cpu"/>
+        <part name="ic07.cpu" crc="0e2880b6"/>
 
         <!-- $5000: ic08 (4KB) -->
-        <part name="ic08.cpu"/>
+        <part name="ic08.cpu" crc="4c331317"/>
 
         <!-- $6000: ic09 (4KB) -->
-        <part name="ic09.cpu"/>
+        <part name="ic09.cpu" crc="6ac1dbfc"/>
 
         <!-- $7000: ic10 (4KB) -->
-        <part name="ic10.cpu"/>
+        <part name="ic10.cpu" crc="c796a406"/>
 
         <!-- $8000: ic14 (4KB) -->
-        <part name="ic14.cpu"/>
+        <part name="ic14.cpu" crc="6f1f0698"/>
 
         <!-- $9000: ic15 (4KB) -->
-        <part name="ic15.cpu"/>
+        <part name="ic15.cpu" crc="5534d57e"/>
 
         <!-- $A000: ic16 (4KB) -->
-        <part name="ic16.cpu"/>
+        <part name="ic16.cpu" crc="6c2aeb6e"/>
 
         <!-- $B000: ic17 (4KB) -->
-        <part name="ic17.cpu"/>
+        <part name="ic17.cpu" crc="f6aa5de1"/>
 
         <!-- $C000-$EFFF: padding (12KB) -->
         <part repeat="0x3000">00</part>
 
         <!-- $F000: ic14 mirror for reset/interrupt vectors -->
-        <part name="ic14.cpu"/>
+        <part name="ic14.cpu" crc="6f1f0698"/>
 
         <!-- gfx1: 8KB at offset $10000 -->
         <!-- plane 0: ic50 (4KB) -->
-        <part name="fs10ic50.bin"/>
+        <part name="fs10ic50.bin" crc="86a801c3"/>
         <!-- plane 1: ic51 (4KB) -->
-        <part name="fs11ic51.bin"/>
+        <part name="fs11ic51.bin" crc="9dfff71c"/>
 
         <!-- proms: 64 bytes at offset $12000 -->
-        <part name="fantasy.ic7"/>
-        <part name="fantasy.ic6"/>
+        <part name="fantasy.ic7" crc="361a5e99"/>
+        <part name="fantasy.ic6" crc="33d974f7"/>
 
+<<<<<<< HEAD
+        <!-- sound ROMs at offset $12040 -->
+        <part name="fs_b_51.bin" crc="48094ec5"/>
+        <part name="fs_a_52.bin" crc="1d0316e8"/>
+        <part name="fs_c_53.bin" crc="49fd4ae8"/>
+=======
         <!-- sound ROMs at offset $12040 (6KB, ends $13840) -->
         <part name="fs_b_51.bin"/>
         <part name="fs_a_52.bin"/>
         <part name="fs_c_53.bin"/>
+>>>>>>> 9540935c02c9d8a0bef6a53b315a2bb05bf7268e
 
         <!-- padding to $14000 -->
         <part repeat="0x7C0">00</part>
