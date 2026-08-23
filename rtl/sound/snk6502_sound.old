@@ -22,9 +22,6 @@ module snk6502_snd (
     // before, so no sound command ever reached this module for either game.
     input  wire                 game_is_sasuke,
     input  wire                 game_is_satansat,
-    // PBALLOON-TEMPO-2026-08-23: only needed to select pballoon's measured
-    // 40.3 Hz music clock (MAME snk6502_a.cpp:958) in the music_div mux below.
-    input  wire                 game_is_pballoon,
     input  wire                 ss_wr0,       // $B000 write strobe (1 clk)
     input  wire                 ss_wr1,       // $B001 write strobe (1 clk)
     input  wire        [7:0]    snd_rom_data, // data from external sound ROM (combinatorial or 1-cycle registered)
@@ -81,13 +78,11 @@ module snk6502_snd (
     // shared 41.2 Hz ran sasuke's music at 54% speed; satansat has no
     // override and uses the base-device default ln2*(18K*2+1K)*1uF =
     // 38.99 Hz (:166). Vanguard/Fantasy/Nibbler are 41.6 Hz measured (the
-    // existing 41.2 is within 1%, untouched).
-    // PBALLOON-TEMPO-2026-08-23: pballoon added - 40.3 Hz measured (:958),
-    // was running 2% fast on the shared divider.
+    // existing 41.2 is within 1%, untouched); PBalloon is 40.3 Hz measured
+    // (2% off, also left alone).
     reg [18:0] music_cnt;
     wire [18:0] music_div = game_is_sasuke   ? 19'd148673 :  // 75.93 Hz
                             game_is_satansat ? 19'd289522 :  // 38.99 Hz
-                            game_is_pballoon ? 19'd280123 :  // 40.30 Hz
                                                MUSIC_DIV;    // 41.2 Hz
     wire music_tick = (music_cnt == music_div);
 
