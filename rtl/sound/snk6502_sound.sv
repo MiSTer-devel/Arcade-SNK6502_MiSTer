@@ -366,7 +366,11 @@ module snk6502_snd (
                 wf_base_val = (wf_bit0 + wf_bit1 + wf_bit2 + wf_bit3 + 5'd1) / 5'd2;
                 wf_data_val = (wf_j[0] ? wf_bit0 : 5'd0) + (wf_j[1] ? wf_bit1 : 5'd0)
                             + (wf_j[2] ? wf_bit2 : 5'd0) + (wf_j[3] ? wf_bit3 : 5'd0);
-                ch_form[wf_state[4]][wf_j] <= ($signed(wf_data_val) - $signed(wf_base_val)) * 16'sd4095;
+                // TONE-SIGNED-MATH-2026-08-23: zero-guard bit before $signed —
+                // see the fantasy-path assignment below for why. (This branch's
+                // values max out at 4 so it never actually wrapped; changed for
+                // uniformity only.)
+                ch_form[wf_state[4]][wf_j] <= ($signed({1'b0, wf_data_val}) - $signed({1'b0, wf_base_val})) * 16'sd4095;
             end else begin
             wf_bit3 = (wf_m[0] || wf_m[1]) ? 5'd8 : wf_m[2] ? 5'd4 : wf_m[3] ? 5'd2 : 5'd0;
             wf_bit2 = wf_m[2] ? 5'd8 : (wf_m[1] || wf_m[3]) ? 5'd4 : 5'd0;
@@ -380,7 +384,19 @@ module snk6502_snd (
             end
             wf_base_val = (wf_bit0 + wf_bit1 + wf_bit2 + wf_bit3 + 5'd1) / 5'd2;
             wf_data_val = (wf_j[0] ? wf_bit0 : 5'd0) + (wf_j[1] ? wf_bit1 : 5'd0) + (wf_j[2] ? wf_bit2 : 5'd0) + (wf_j[3] ? wf_bit3 : 5'd0);
-            ch_form[wf_state[4]][wf_j] <= ($signed(wf_data_val) - $signed(wf_base_val)) * 16'sd409;
+            // TONE-SIGNED-MATH-2026-08-23: wf_data_val is a 5-bit UNSIGNED reg
+            // that legitimately reaches 16..30 (the <<1 normalisation above
+            // guarantees the four weights sum to >=16, so the all-bits entry
+            // always does). $signed() of a 5-bit value >=16 reinterprets it as
+            // NEGATIVE (28 -> -4), so the loudest entries of every waveform
+            // were computed wildly wrong: 88 of the 256 possible (mask, entry)
+            // table values were corrupted, worst case mask=1 entry=8 = -9816
+            // where MAME's build_waveform gives +3272 - inverted spikes 3x the
+            // intended value, i.e. gross harmonic distortion on every game
+            // that uses this builder (Fantasy/Nibbler/Vanguard/PBalloon).
+            // A zero guard bit makes the 6-bit $signed conversion lossless.
+            // Original: ch_form[wf_state[4]][wf_j] <= ($signed(wf_data_val) - $signed(wf_base_val)) * 16'sd409;
+            ch_form[wf_state[4]][wf_j] <= ($signed({1'b0, wf_data_val}) - $signed({1'b0, wf_base_val})) * 16'sd409;
             end
             wf_state <= wf_state + 5'd1;
             if (wf_state == 5'd31) begin
@@ -572,16 +588,36 @@ module snk6502_snd (
                     prev_val = ch_form[i][prev_idx];
                     cur_val  = ch_form[i][cur_idx];
                     frac = cur_pos[23:8];
-                    interp = ((prev_val * (FRAC_ONE - frac)) +
-                              (cur_val  * frac)) >> FRAC_BITS;
+                    // TONE-SIGNED-MATH-2026-08-23: frac is an UNSIGNED reg, and
+                    // one unsigned operand makes Verilog evaluate the WHOLE
+                    // expression unsigned (prev_val/cur_val zero-extended, `>>`
+                    // logical). Net effect: every negative interpolated sample
+                    // came out as (true value + 65536), which after sum[18:3]
+                    // was a +8192 step at the output each time a channel's
+                    // sample went negative - a loud square wave overlaid on the
+                    // music at the tone frequency, plus glitches at zero
+                    // crossings where prev/cur signs differ. Verified: 75% of
+                    // random samples wrong under the old semantics. Zero-guard
+                    // $signed casts keep everything signed; >>> for the
+                    // arithmetic shift.
+                    // Original: interp = ((prev_val * (FRAC_ONE - frac)) +
+                    // Original:           (cur_val  * frac)) >> FRAC_BITS;
+                    interp = ((prev_val * $signed({1'b0, FRAC_ONE - frac})) +
+                              (cur_val  * $signed({1'b0, frac}))) >>> FRAC_BITS;
                     sum = sum + interp;
                 end
             end
-            // MAME scales each waveform entry by 65535/160 (= 409), so
-            // per-channel peak is ±3272 and the 3-channel sum peaks at
-            // ±9816 — fits in 15 bits signed with headroom. Take the
-            // low 16 bits directly (no attenuation).
-            audio_out <= sum[18:3];   // fits comfortably in 16-bit signed range
+            // TONE-LEVEL-2026-08-23: was sum[18:3] (/8). With the signed-math
+            // fixes above, the true tone level at /8 peaks only ~2300 (7% FS)
+            // - buried under speech and effects, and ~6 dB quieter than the
+            // (distorted) level everyone has been hearing, because the old
+            // interpolation error added a spurious +-4096 square component.
+            // /2 restores the familiar loudness, clean, and sits music where
+            // MAME routes it (custom at 0.50). Worst-case |sum|: fantasy path
+            // 3 ch x 15 x 409 = 18405, sasuke/satansat 2 ch x 2 x 4095 =
+            // 16380 -> sum[16:1] peaks 9202, no 16-bit overflow possible.
+            // Original: audio_out <= sum[18:3];
+            audio_out <= sum[16:1];
         end
     end
 

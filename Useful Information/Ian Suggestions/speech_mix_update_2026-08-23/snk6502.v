@@ -1108,8 +1108,7 @@ hd38880_top #(.CLK_HZ(11_289_000)) speech (
 // Sound port write strobes — game-aware (per MAME memory maps)
 //   Fantasy/Nibbler:  $2100-$2103  (port 3 also written by fantasy_flipscreen_w)
 //   Vanguard:         $3100-$3102  (no port 3; $3103 is flipscreen only)
-//   Pioneer Balloon:  $B100-$B103  (PBalloon shares fantasy_flipscreen_w, so it
-//                                   gets port 3 too - snk6502.cpp:458)
+//   Pioneer Balloon:  $B100-$B102  (no port 3; $B103 is flipscreen only)
 // Address ranges don't overlap, so a simple OR decode works without game_id.
 // ---------------------------------------------------------------------------
 wire snd_wr0 = io_wr & ((cpu_addr == 16'h2100) |
@@ -1121,7 +1120,7 @@ wire snd_wr1 = io_wr & ((cpu_addr == 16'h2101) |
 wire snd_wr2 = io_wr & ((cpu_addr == 16'h2102) |
                         (cpu_addr == 16'h3102) |
                         (cpu_addr == 16'hB102));
-wire snd_wr3 = fy_flip_wr | pb_flip_wr;   // both route through fantasy_flipscreen_w
+wire snd_wr3 = io_wr &  (cpu_addr == 16'h2103);  // Fantasy/Nibbler only
 
 // SASUKE-SATANSAT-SOUND-2026-08-03: Sasuke/SatanSat put their sound port at
 // $B000/$B001 (MAME sasuke_map:347 / satansat_map:367), which was NOT DECODED
