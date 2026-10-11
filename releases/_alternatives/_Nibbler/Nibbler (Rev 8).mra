@@ -1,8 +1,9 @@
 <misterromdescription>
-    <name>Nibbler (rev 9)</name>
-    <setname>nibbler</setname>
+    <name>Nibbler (Rev 8)</name>
+    <setname>nibbler8</setname>
+    <parent>nibbler</parent>
     <rbf>SNK6502</rbf>
-    <mameversion>0261</mameversion>
+    <mameversion>0289</mameversion>
     <year>1982</year>
     <manufacturer>Rock-Ola</manufacturer>
     <players>1</players>
@@ -12,7 +13,7 @@
     <category>Maze</category>
 
     <switches default="00" base="16">
-        <dip name="Lives" bits="0,1" ids="3,4,5,6"/>
+        <dip name="Lives" bits="0,1" ids="2,3,4,5"/>
         <dip name="Difficulty" bits="2" ids="Easy,Hard"/>
         <dip name="Cabinet" bits="3" ids="Upright,Cocktail"/>
         <dip name="Service Mode" bits="4" ids="Off,On"/>
@@ -22,26 +23,24 @@
 
     <buttons names="-,-,-,-,Coin,Start 1P,Start 2P,Pause" default="Select,Start,R,L"/>
 
-    <rom index="0" zip="nibbler.zip" md5="none">
+    <rom index="0" zip="nibbler8.zip|nibbler.zip" md5="none">
         <part repeat="0x3000">00</part>
-        <part crc="6dfa1be5" name="g-0960-52.ic12"/>
-        <part crc="808e1a03" name="g-0960-48.ic7"/>
-        <part crc="1571d4a2" name="g-0960-49.ic8"/>
+        <part crc="68af8f4b" name="50-144.012"/>
+        <part crc="c18b3009" name="50-140.007"/>
+        <part crc="b50fd79c" name="50-141.008"/>
         <part crc="a599df10" name="g-0960-50.ic9"/>
         <part crc="a6b5abe5" name="g-0960-51.ic10"/>
-        <part crc="9f537185" name="g-0960-53.ic14"/>
+        <part crc="29ea246a" name="50-145.014"/>
         <part crc="7205fb8d" name="g-0960-54.ic15"/>
         <part crc="4bb39815" name="g-0960-55.ic16"/>
         <part crc="ed680f19" name="g-0960-56.ic17"/>
         <part repeat="0x3000">00</part>
-        <part crc="9f537185" name="g-0960-53.ic14"/>
+        <part crc="29ea246a" name="50-145.014"/>
         <part crc="01d4d0c2" name="g-0960-57.ic50"/>
         <part crc="feff7faf" name="g-0960-58.ic51"/>
-
         <part crc="a5709ff3" name="g-0708-05.ic7"/>
         <part crc="dacd592d" name="g-0708-04.ic6"/>
-
-        <part repeat="0x0800">FF</part>
+        <part repeat="0x800">FF</part>
         <part crc="87d67dee" name="g-0959-44.ic52"/>
         <part crc="33189917" name="g-0959-45.ic53"/>
     </rom>
@@ -51,13 +50,5 @@
         <part>05</part>
     </rom>
 
-    <rom index="3">
-        <part>
-            01 FF FF FF 00 FF 00 02 00 02 00 01 00 FF 00 00
-            00 00 59 93 46 00 14 00
-        </part>
-    </rom>
-
-    <nvram index="4" size="70"/>
-
+    <remark>Nibbler (Rock-Ola)</remark>
 </misterromdescription>
