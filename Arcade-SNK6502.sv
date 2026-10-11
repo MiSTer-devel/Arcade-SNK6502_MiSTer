@@ -60,6 +60,7 @@ localparam CONF_STR = {
 	"H0P1OJK,Aspect Ratio,Original,Full Screen,[ARC1],[ARC2];",
 	"H0P1O2,Orientation,Vert,Horz;",
 	"P1OB,HDMI Flip,Off,On;",
+	"P1OM,CRT Flip,Off,On;",
 	"P1O35,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
 	"-;",
 	"DIP;",
@@ -393,6 +394,7 @@ snk6502 game_core(
 	.clk_sys    (clk_sys),
 	.reset      (reset),
 	.pause      (pause_cpu),
+	.crt_flip   (status[22]),       // OSD CRT Flip
 
 	.game_id    (game_id),
 

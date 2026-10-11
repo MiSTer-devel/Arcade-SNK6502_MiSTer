@@ -12,6 +12,7 @@ module snk6502(
     input         clk_sys,        // ~45 MHz system clock (for ROM download)
     input         reset,
     input         pause,
+    input         crt_flip,       // OSD CRT Flip: 180 degree mirror of the whole raster
     output        ce_pix,
 
     // Game configuration (selects memory map / I/O layout)
@@ -297,7 +298,8 @@ wire charram_wr = charram_cs & ~cpu_rw_n & cpu_clken;
 // Charram split into two 2KB planes for simultaneous video read
 // Plane 0 (IC67): $1000-$17FF (addr bit 11 = 0)
 // Plane 1 (IC68): $1800-$1FFF (addr bit 11 = 1)
-wire [10:0] charram_vid_addr = {fg_tile_code, tile_line};
+// Original: wire [10:0] charram_vid_addr = {fg_tile_code, tile_line};
+wire [10:0] charram_vid_addr = {fg_tile_code, fl_line};   // CRT-FLIP-2026-10-11
 wire [7:0]  charram_p0_dout, charram_p1_dout;
 
 dpram #(.address_width(11)) char_ram_p0(
@@ -480,7 +482,27 @@ wire [9:0]  crtc_ma_disp = crtc_ma[9:0] - {9'd0, ma_needs_start_adj};
 wire [4:0] tile_col  = crtc_ma_disp[4:0];
 wire [4:0] tile_row  = crtc_ma_disp[9:5];
 wire [2:0] tile_line = crtc_ra[2:0];
-wire [9:0] tile_addr = crtc_ma_disp;
+// Original: wire [9:0] tile_addr = crtc_ma_disp;
+
+// CRT-FLIP-2026-10-11: OSD CRT Flip mirrors the raster by mirroring what is FETCHED (no frame/line buffer here).
+// The visible area is 32 x 28 characters starting one past S, the address of the frame's first DE fetch (the
+// fetch runs one character ahead): addresses S+1 .. S+896. A char at address A is replaced by 2S+897-A (row and
+// column mirrored together), its line by 7-line, and the pixel shift registers below run the other way.
+// S is latched per frame because the games program different start addresses (Pioneer Balloon != Vanguard).
+// Every crt_flip term is a no-op at crt_flip = 0.
+reg [9:0] fl_s;
+reg       fl_s_armed;
+always @(posedge clk_master)
+    if (crtc_vblank) fl_s_armed <= 1'b1;
+    else if (crtc_clken && crtc_de && fl_s_armed) begin
+        fl_s       <= crtc_ma_disp;
+        fl_s_armed <= 1'b0;
+    end
+wire [9:0] fl_addr = {fl_s, 1'b0} + 10'd897 - crtc_ma_disp;
+wire [4:0] fl_col  = crt_flip ? fl_addr[4:0]        : tile_col;
+wire [4:0] fl_row  = crt_flip ? fl_addr[9:5]        : tile_row;
+wire [2:0] fl_line = crt_flip ? (3'd7  - tile_line) : tile_line;
+wire [9:0] tile_addr = {fl_row, fl_col};
 
 // BG layer: apply scroll registers
 //
@@ -511,12 +533,15 @@ wire [9:0] tile_addr = crtc_ma_disp;
 // into a 16-bit window and taps it at bit (15 - f). The +1 wraps mod 32, which is
 // correct tilemap wrapping. See the pixel-pipeline block for the rest.
 // Original: wire [4:0] bg_col = tile_col + scroll_x[7:3];
-wire [4:0] bg_col = tile_col + scroll_x[7:3] + 5'd1;
+// Original: wire [4:0] bg_col = tile_col + scroll_x[7:3] + 5'd1;
+// CRT-FLIP-2026-10-11: mirrored, the scan walks the world DOWNWARD, so the window needs the tile itself (t0) plus
+// the one ABOVE it (t0+1, fetched on the previous character) - no +1 lookahead.
+wire [4:0] bg_col = crt_flip ? (fl_col + scroll_x[7:3]) : (tile_col + scroll_x[7:3] + 5'd1);
 
-wire [3:0] bg_line_sum   = {1'b0, tile_line} + {1'b0, scroll_y[2:0]};
+wire [3:0] bg_line_sum   = {1'b0, fl_line} + {1'b0, scroll_y[2:0]};   // CRT-FLIP-2026-10-11: was tile_line
 wire [2:0] bg_line       = bg_line_sum[2:0];
 wire       bg_line_carry = bg_line_sum[3];
-wire [4:0] bg_row = tile_row + scroll_y[7:3] + {4'd0, bg_line_carry};
+wire [4:0] bg_row = fl_row + scroll_y[7:3] + {4'd0, bg_line_carry};   // CRT-FLIP-2026-10-11: was tile_row
 
 wire [9:0] bg_tile_addr = {bg_row, bg_col};
 
@@ -805,22 +830,24 @@ always @(posedge clk_master) crtc_clken_d <= crtc_clken;
 //         fg_p1_latch <= {fg_p1_latch[6:0], 1'b0};
 //     end
 // end
+// CRT-FLIP-2026-10-11: mirrored, every shift runs RIGHT. The BG window is {byte t0, byte t0+1} = {cur, prev},
+// and the slot's colour is t0's (the current fetch) - the exact mirror of the unflipped one-colour-per-slot rule.
 always @(posedge clk_master) begin
     if (crtc_clken) begin
-        bg_p0_win      <= {bg_p0_prev, bg_p0_dout};
-        bg_p1_win      <= {bg_p1_prev, bg_p1_dout};
+        bg_p0_win      <= crt_flip ? {bg_p0_dout, bg_p0_prev} : {bg_p0_prev, bg_p0_dout};
+        bg_p1_win      <= crt_flip ? {bg_p1_dout, bg_p1_prev} : {bg_p1_prev, bg_p1_dout};
         bg_p0_prev     <= bg_p0_dout;
         bg_p1_prev     <= bg_p1_dout;
-        bg_color_latch <= bg_color_prev;   // colour of tile T, matching window[15:8]
+        bg_color_latch <= crt_flip ? bg_color : bg_color_prev;   // colour of tile T, matching window[15:8]
         bg_color_prev  <= bg_color;
         fg_p0_latch    <= fg_p0_raw;
         fg_p1_latch    <= fg_p1_raw;
         fg_color_latch <= fg_color;
     end else if (ce_pix) begin
-        bg_p0_win   <= {bg_p0_win[14:0], 1'b0};
-        bg_p1_win   <= {bg_p1_win[14:0], 1'b0};
-        fg_p0_latch <= {fg_p0_latch[6:0], 1'b0};
-        fg_p1_latch <= {fg_p1_latch[6:0], 1'b0};
+        bg_p0_win   <= crt_flip ? {1'b0, bg_p0_win[15:1]}  : {bg_p0_win[14:0], 1'b0};
+        bg_p1_win   <= crt_flip ? {1'b0, bg_p1_win[15:1]}  : {bg_p1_win[14:0], 1'b0};
+        fg_p0_latch <= crt_flip ? {1'b0, fg_p0_latch[7:1]} : {fg_p0_latch[6:0], 1'b0};
+        fg_p1_latch <= crt_flip ? {1'b0, fg_p1_latch[7:1]} : {fg_p1_latch[6:0], 1'b0};
     end
 end
 
@@ -835,7 +862,9 @@ wire sasuke_swap = (game_id == GID_SASUKE);
 // Index computed into a named wire first - this is a .v file, elaborated as
 // Verilog-2001 by Quartus 17.0 (see feedback_verilog2001_expression_bitselect).
 // Original: wire [1:0] bg_pixel_raw = {bg_p1_latch[7], bg_p0_latch[7]};
-wire [3:0] bg_fine_tap  = 4'd15 - {1'b0, scroll_x[2:0]};
+// Original: wire [3:0] bg_fine_tap  = 4'd15 - {1'b0, scroll_x[2:0]};
+// CRT-FLIP-2026-10-11: mirrored window shifts right; first pixel of the slot is bit (8 - f)
+wire [3:0] bg_fine_tap  = crt_flip ? (4'd8 - {1'b0, scroll_x[2:0]}) : (4'd15 - {1'b0, scroll_x[2:0]});
 wire       bg_p0_bit    = bg_p0_win[bg_fine_tap];
 wire       bg_p1_bit    = bg_p1_win[bg_fine_tap];
 wire [1:0] bg_pixel_raw = {bg_p1_bit, bg_p0_bit};
@@ -844,7 +873,8 @@ wire bg_swap = sasuke_swap | fantasy_nibbler_swap | pballoon_bg_swap | (game_id 
 wire [1:0] bg_pixel = bg_swap ? {bg_pixel_raw[0], bg_pixel_raw[1]} : bg_pixel_raw;
 
 //wire [1:0] fg_pixel = {fg_p1_latch[7], fg_p0_latch[7]};
-wire [1:0] fg_pixel_raw = {fg_p1_latch[7], fg_p0_latch[7]};
+// Original: wire [1:0] fg_pixel_raw = {fg_p1_latch[7], fg_p0_latch[7]};
+wire [1:0] fg_pixel_raw = crt_flip ? {fg_p1_latch[0], fg_p0_latch[0]} : {fg_p1_latch[7], fg_p0_latch[7]};   // CRT-FLIP-2026-10-11
 // FG-PLANE-SWAP-VANGUARD-2026-08-03: Vanguard's FG pen bits were inverted.
 // MAME gfx_vanguard uses charlayout_memory for the FG with planes { 0, 256*8*8 },
 // and MAME's FIRST plane entry is the pixel MSB => MSB = charram+0x000 (= our
