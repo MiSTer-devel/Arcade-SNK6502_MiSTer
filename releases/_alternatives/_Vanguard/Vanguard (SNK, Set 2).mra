@@ -1,5 +1,5 @@
 <misterromdescription>
-    <n>Vanguard</n>
+    <name>Vanguard (SNK, Set 2)</name>
     <setname>vanguarda</setname>
     <parent>vanguard</parent>
     <rbf>SNK6502</rbf>

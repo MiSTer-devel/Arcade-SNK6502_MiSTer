@@ -182,54 +182,83 @@ localparam GID_PBALLOON = 4'd4;
 localparam GID_NIBBLER  = 4'd5;
 
 // ----- PS/2 Keyboard -----
-reg btn_up       = 0;
-reg btn_down     = 0;
-reg btn_left     = 0;
-reg btn_right    = 0;
-reg btn_fire1    = 0;
-reg btn_fire2    = 0;
-reg btn_fire3    = 0;
-reg btn_fire4    = 0;
-reg btn_coin1    = 0;
-reg btn_coin2    = 0;
-reg btn_1p_start = 0;
-reg btn_2p_start = 0;
-reg btn_pause    = 0;
-
-wire pressed = ~ps2_key[9];
-wire [7:0] code = ps2_key[7:0];
-always @(posedge clk_sys) begin
-	reg old_state;
-	old_state <= ps2_key[10];
-	if (old_state != ps2_key[10]) begin
-		case (code)
-			'h16: btn_1p_start <= pressed; // 1
-			'h1E: btn_2p_start <= pressed; // 2
-			'h2E: btn_coin1    <= pressed; // 5
-			'h36: btn_coin2    <= pressed; // 6
-			'h4D: btn_pause    <= pressed; // P
-			'h75: btn_up       <= pressed; // up
-			'h72: btn_down     <= pressed; // down
-			'h6B: btn_left     <= pressed; // left
-			'h74: btn_right    <= pressed; // right
-			'h14: btn_fire1    <= pressed; // L ctrl  = Button 1 (A)
-			'h12: btn_fire2    <= pressed; // L shift = Button 2 (B)
-			'h11: btn_fire3    <= pressed; // L alt   = Button 3 (X)
-			'h29: btn_fire4    <= pressed; // space   = Button 4 (Y)
-		endcase
-	end
-end
+// CTL-2026-10-25: original keyboard block, replaced by ctl_keyboard below
+// reg btn_up       = 0;
+// reg btn_down     = 0;
+// reg btn_left     = 0;
+// reg btn_right    = 0;
+// reg btn_fire1    = 0;
+// reg btn_fire2    = 0;
+// reg btn_fire3    = 0;
+// reg btn_fire4    = 0;
+// reg btn_coin1    = 0;
+// reg btn_coin2    = 0;
+// reg btn_1p_start = 0;
+// reg btn_2p_start = 0;
+// reg btn_pause    = 0;
+//
+// wire pressed = ~ps2_key[9];
+// wire [7:0] code = ps2_key[7:0];
+// always @(posedge clk_sys) begin
+// 	reg old_state;
+// 	old_state <= ps2_key[10];
+// 	if (old_state != ps2_key[10]) begin
+// 		case (code)
+// 			'h16: btn_1p_start <= pressed; // 1
+// 			'h1E: btn_2p_start <= pressed; // 2
+// 			'h2E: btn_coin1    <= pressed; // 5
+// 			'h36: btn_coin2    <= pressed; // 6
+// 			'h4D: btn_pause    <= pressed; // P
+// 			'h75: btn_up       <= pressed; // up
+// 			'h72: btn_down     <= pressed; // down
+// 			'h6B: btn_left     <= pressed; // left
+// 			'h74: btn_right    <= pressed; // right
+// 			'h14: btn_fire1    <= pressed; // L ctrl  = Button 1 (A)
+// 			'h12: btn_fire2    <= pressed; // L shift = Button 2 (B)
+// 			'h11: btn_fire3    <= pressed; // L alt   = Button 3 (X)
+// 			'h29: btn_fire4    <= pressed; // space   = Button 4 (Y)
+// 		endcase
+// 	end
+// end
+// CTL-2026-10-25: keyboard -> controllers.sv ctl_keyboard. Keys now act on PRESS (the old `~ps2_key[9]` made them act
+// on release and stay held). Extended bit ignored = STD_EXT 0, as before. Extra-key table (level, either extended form):
+// left Shift (0x12) -> kbx[0] = Button 2, Space (0x29) -> kbx[1] = Button 4. No toggle keys, so pause changes nothing.
+wire [12:0] kb;
+wire  [1:0] kbx;
+ctl_keyboard #(.NX(2), .NXO(2), .XKEYS({24'h10_29_01, 24'h10_12_00})) keyboard
+	(.clk(clk_sys), .ps2_key(ps2_key), .pause(pause_cpu), .kb(kb), .kbx(kbx));
+wire btn_up       = kb[0];    // up
+wire btn_down     = kb[1];    // down
+wire btn_left     = kb[2];    // left
+wire btn_right    = kb[3];    // right
+wire btn_fire1    = kb[4];    // L ctrl  = Button 1 (A)
+wire btn_fire2    = kbx[0];   // L shift = Button 2 (B)
+wire btn_fire3    = kb[5];    // L alt   = Button 3 (X)
+wire btn_fire4    = kbx[1];   // space   = Button 4 (Y)
+wire btn_coin1    = kb[8];    // 5
+wire btn_coin2    = kb[9];    // 6
+wire btn_1p_start = kb[6];    // 1
+wire btn_2p_start = kb[7];    // 2
+wire btn_pause    = kb[12];   // P
 
 // ----- Right analog stick decode (Vanguard secondary fire) -----
 // joystick_r_analog_0[7:0]  = X axis (signed), positive = right
 // joystick_r_analog_0[15:8] = Y axis (signed), positive = down
 // Threshold of ±64/127 (~half deflection) — same as Qix.
-wire signed [7:0] rstick_x = joystick_r_analog_0[7:0];
-wire signed [7:0] rstick_y = joystick_r_analog_0[15:8];
-wire r_fire_right = (rstick_x >  8'sd64);
-wire r_fire_left  = (rstick_x < -8'sd64);
-wire r_fire_down  = (rstick_y >  8'sd64);
-wire r_fire_up    = (rstick_y < -8'sd64);
+// CTL-2026-10-25: original right-stick decode, replaced by ctl_stick_dirs below
+// wire signed [7:0] rstick_x = joystick_r_analog_0[7:0];
+// wire signed [7:0] rstick_y = joystick_r_analog_0[15:8];
+// wire r_fire_right = (rstick_x >  8'sd64);
+// wire r_fire_left  = (rstick_x < -8'sd64);
+// wire r_fire_down  = (rstick_y >  8'sd64);
+// wire r_fire_up    = (rstick_y < -8'sd64);
+// CTL-2026-10-25: right-stick fire decode -> controllers.sv ctl_stick_dirs (each axis past +/-64, the same signed compares)
+wire [3:0] rstick_dir;        // {U, D, L, R}
+ctl_stick_dirs #(.MODE(0), .THRESH(7'd64)) rstick(.stick(joystick_r_analog_0), .dir(rstick_dir));
+wire r_fire_right = rstick_dir[0];
+wire r_fire_left  = rstick_dir[1];
+wire r_fire_down  = rstick_dir[2];
+wire r_fire_up    = rstick_dir[3];
 
 // ----- Sasuke / SatanSat free-running counter -----
 // MAME (snk6502.cpp): 8-bit counter += 0x10 at 1.4 MHz; sasuke_count_r() = counter >> 4.

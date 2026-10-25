@@ -1,5 +1,5 @@
 <misterromdescription>
-    <n>Vanguard</n>
+    <name>Vanguard (Germany)</name>
     <setname>vanguardg</setname>
     <parent>vanguard</parent>
     <rbf>SNK6502</rbf>
