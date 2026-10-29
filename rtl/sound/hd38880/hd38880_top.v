@@ -49,7 +49,7 @@ module hd38880_top #(
         .wr(host_wr), .din(host_din),
         .start(start_vg), .stop(stop_vg),
         .phrase(phrase_vg), .phrase_ok(phrase_ok_vg), .adset_addr(adset_addr_vg),
-        .end_addr(end_addr_vg),   // SPEECH-PHRASE-END-2026-08-23
+        .end_addr(end_addr_vg),
         .int1_cfg(int1_cfg_vg), .int2_cfg(int2_cfg_vg), .syspd(syspd_vg)
     );
 
@@ -62,20 +62,13 @@ module hd38880_top #(
         .wr(host_wr), .din(host_din),
         .start(start_fy), .stop(stop_fy),
         .phrase(phrase_fy), .phrase_ok(phrase_ok_fy), .adset_addr(adset_addr_fy),
-        .end_addr(end_addr_fy),   // SPEECH-PHRASE-END-2026-08-23
+        .end_addr(end_addr_fy),
         .int1_cfg(int1_cfg_fy), .int2_cfg(int2_cfg_fy), .syspd(syspd_fy)
     );
 
-    // DIAG-REVERT-2026-08-01: REVERTED 2026-08-03. The forced phrase-0 kick is
-    // removed and the real muxed signals restored. Verilator bench
-    // (verilator/hd38880_tb.cpp, driven by the real $3400 write stream
-    // reconstructed from vanguard_maincpu-4000.dasm) confirmed BOTH paths in
-    // simulation: the real CPU->ctrl path decodes ADSET $044A2 -> phrase 2,
-    // phrase_ok=1, and the forced path the diagnostic used was also sound.
-    // The diagnostic had done its job; silence was not a triggering problem.
     wire        ctrl_start     = game_is_fantasy ? start_fy      : start_vg;
     wire [19:0] ctrl_adset     = game_is_fantasy ? adset_addr_fy : adset_addr_vg;
-    wire [19:0] ctrl_end       = game_is_fantasy ? end_addr_fy   : end_addr_vg;  // SPEECH-PHRASE-END-2026-08-23
+    wire [19:0] ctrl_end       = game_is_fantasy ? end_addr_fy   : end_addr_vg;
     wire        ctrl_stop      = game_is_fantasy ? stop_fy       : stop_vg;
     wire [3:0]  ctrl_int1      = game_is_fantasy ? int1_cfg_fy   : int1_cfg_vg;
     wire [3:0]  ctrl_int2      = game_is_fantasy ? int2_cfg_fy   : int2_cfg_vg;
@@ -97,7 +90,7 @@ module hd38880_top #(
     hd38880_unpack unpack (
         .clk(clk), .rst(reset),
         .start(ctrl_start), .start_addr(ctrl_adset),
-        .end_addr(ctrl_end),      // SPEECH-PHRASE-END-2026-08-23
+        .end_addr(ctrl_end),
         .abort(ctrl_stop), .done(unpack_done),
         .rom_addr(unpack_rom_addr), .rom_data(rom_data),
         .rom_rd(unpack_rom_rd), .rom_valid(unpack_rom_valid),
@@ -181,20 +174,9 @@ module hd38880_top #(
         end
     end
 
-    // SPEECH-IDLE-MUTE-2026-08-03: parcor_lattice does NOT settle to zero when a
-    // phrase ends. Measured in the Verilator bench (verilator/hd38880_tb.cpp,
-    // Vanguard phrase 2): unpack_done asserts exactly at sample 8480 (= 53 frames
-    // x 160, correct), but the lattice output then holds a CONSTANT peak of 1408
-    // for the rest of the run - flat, no decay, block after block. Its de-emphasis
-    // / filter state simply retains its last value with zero excitation.
-    //
-    // At the old >>>6 mix that residue was 22/32768 (-63 dB, inaudible). After
-    // SPEECH-GAIN-2026-08-03 raised the mix 128x it became ~2816/32768 (-21 dB) =
-    // the continuous background hum the user reported on Vanguard.
-    //
-    // Fix here rather than in Fable's DSP: hold output at silence unless a phrase
-    // is actually playing. The real chip emits nothing when stopped, so this is
-    // also the faithful behaviour.
+    // parcor_lattice does NOT settle to zero when a phrase ends: with zero excitation its filter state holds its last
+    // value (measured on Vanguard phrase 2: a constant 1408 peak after unpack_done, -21 dB at the mix level - an
+    // audible hum). The output is held at silence unless a phrase is playing; the real chip emits nothing when stopped.
     reg speaking;
     always @(posedge clk) begin
         if (reset)                          speaking <= 1'b0;

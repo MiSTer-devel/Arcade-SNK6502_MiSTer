@@ -1,13 +1,15 @@
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/chip_pool_pkg.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/ram_pool_pkg.sv
 set_global_assignment -name QIP_FILE rtl/T65/t65.qip
-set_global_assignment -name VHDL_FILE rtl/mc6845.vhd
-set_global_assignment -name VERILOG_FILE rtl/snk6502.v
-set_global_assignment -name VERILOG_FILE rtl/ram_rom/dpram.v
+set_global_assignment -name VHDL_FILE rtl/video/mc6845.vhd
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/ram_rom/dpram_dc.sv
 set_global_assignment -name VERILOG_FILE rtl/mister_custom/hiscore.v
 set_global_assignment -name VERILOG_FILE rtl/mister_custom/pause.v
-# CTL-2026-10-25: shared input library (controllers.sv v2)
+# shared input library
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/mister_custom/controllers.sv
-set_global_assignment -name VERILOG_FILE rtl/ram_rom/spram.v
 set_global_assignment -name SYSTEMVERILOG_FILE Arcade-SNK6502.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/snk6502_dispatcher.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/boards/snk6502_board.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/sound/snk6502_sound.sv
 set_global_assignment -name VERILOG_FILE rtl/sound/snk6502_noise.v
 set_global_assignment -name VERILOG_FILE rtl/sound/sn76477_noise.v
@@ -16,6 +18,3 @@ set_global_assignment -name VERILOG_FILE rtl/sound/hd38880/hd38880_unpack.v
 set_global_assignment -name VERILOG_FILE rtl/sound/hd38880/hd38880_dectab.v
 set_global_assignment -name VERILOG_FILE rtl/sound/hd38880/parcor_lattice.v
 set_global_assignment -name VERILOG_FILE rtl/sound/hd38880/hd38880_top.v
-# DPRAMSV-2026-10-25: VHDL dpram_dc replaced by the SystemVerilog one (same ports/generics + byteena); original:
-# set_global_assignment -name VHDL_FILE rtl/ram_rom/dpram_dc.vhd
-set_global_assignment -name SYSTEMVERILOG_FILE rtl/ram_rom/dpram_dc.sv

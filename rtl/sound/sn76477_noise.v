@@ -1,7 +1,6 @@
 //============================================================================
 // sn76477_noise.v   --   SN76477 as used by Vanguard / Fantasy (SNK6502)
 //
-// SN76477-NOISE-2026-08-03
 //
 // This is NOT a general SN76477. It models the chip in the ONE configuration
 // these boards actually wire it for, which MAME spells out exactly:
@@ -51,10 +50,10 @@
 // leg is sampled below its own rate and aliases. Aliased broadband noise is
 // still broadband noise perceptually, so this is accepted rather than adding an
 // oversampled path - but it is not a literal 97.5 kHz spectrum. Measured in
-// verilator/sn_tb.cpp: that leg shows 23889 sign changes/sec, i.e. pinned at
+// the SN76477 chip bench (sn_tb.cpp): that leg shows 23889 sign changes/sec, i.e. pinned at
 // Nyquist, versus 1563/sec for the filtered 3.08 kHz leg.
 //
-// VERIFIED (verilator/sn_tb.cpp, 1 s per config):
+// VERIFIED (chip bench sn_tb.cpp, 1 s per config):
 //   leg      gate-OFF nonzero   sign changes/s   peak   mean|amp|
 //   3082+f   0                  1563             6000   3117   (52% of peak = filtered)
 //   97493    0                  23889            3000   2999   (~peak = unfiltered square)

@@ -9,41 +9,33 @@ module snk6502_snd (
     input  wire                 wr0,          // one-cycle write strobe for port 0
     input  wire                 wr1,          // one-cycle write strobe for port 1
     input  wire                 wr2,          // one-cycle write strobe for port 2
-    input  wire                 wr3,          // one-cycle write strobe for port 3 (new)
-    // VANGUARD-SOUND-2026-08-03: MAME implements a SEPARATE vanguard_sound_device
-    // (snk6502_a.cpp:573) whose sound_w differs from fantasy_sound_device::sound_w
-    // (:758). Fantasy/Nibbler/PBalloon all share the Fantasy path (nibbler_ and
-    // pballoon_sound_device subclass fantasy_sound_device and inherit sound_w),
-    // so ONLY Vanguard needs splitting out. See Claude/vanguard_audio_audit_2026-08-03.md
+    input  wire                 wr3,          // one-cycle write strobe for port 3
+    // Vanguard's sound ports differ from Fantasy's (MAME has a separate Vanguard sound device); Fantasy / Nibbler /
+    // Pioneer Balloon share the Fantasy path.
     input  wire                 game_is_vanguard,
-    // SASUKE-SATANSAT-SOUND-2026-08-03: these two ALSO have their own MAME sound
-    // devices (sasuke_sound_device::sound_w :970, satansat_sound_device::sound_w
-    // :1119) on a DIFFERENT port pair -- $B000/$B001, which was not decoded at all
-    // before, so no sound command ever reached this module for either game.
+    // Sasuke / Satan of Saturn have their own sound ports, $B000 / $B001 (ss_wr0 / ss_wr1)
     input  wire                 game_is_sasuke,
     input  wire                 game_is_satansat,
-    // PBALLOON-TEMPO-2026-08-23: only needed to select pballoon's measured
-    // 40.3 Hz music clock (MAME snk6502_a.cpp:958) in the music_div mux below.
+    // selects Pioneer Balloon's measured 40.3 Hz music clock (music_div below)
     input  wire                 game_is_pballoon,
     input  wire                 ss_wr0,       // $B000 write strobe (1 clk)
     input  wire                 ss_wr1,       // $B001 write strobe (1 clk)
     input  wire        [7:0]    snd_rom_data, // data from external sound ROM (combinatorial or 1-cycle registered)
     output reg         [12:0]   snd_rom_addr, // address to sound ROM
     output reg  signed [15:0]   audio_out,    // 16-bit signed PCM output (sum of 3 channels)
-    // MAME snk6502_a.cpp:322 — int music0_playing() { return m_tone_channels[0].mute ? 1 : 0; }
-    // Active high when ch0 is MUTED (i.e., music NOT currently playing). Game polls this
-    // at title/continue/death music boundaries to know previous music has finished.
+    // Active high when ch0 is MUTED (music NOT playing; MAME's custom input reads ch0's mute flag). The game polls it
+    // at title / continue / death music boundaries to know the previous music has finished.
     output wire                 music0_playing
 );
 
     //////////////////////////////////////////////////////////////////////////
-    // References to MAME snk6502_a.cpp (fantasy/nibbler path)
+    // Tone generator, as MAME snk6502_a.cpp (Fantasy / Nibbler path)
     // - 3 independent tone channels
     // - Offset counter advances at music clock (~41 Hz)
     // - ROM lookup at (base + offset) yields period byte
     // - If period == 0xFF → channel silent
     // - sample_step derived from music_freq / (256 - period)
-    // - Waveform table (16 entries, signed) updated by CPU via build_waveform
+    // - Waveform table (16 entries, signed) rebuilt on CPU writes
     // - Phase accumulator steps through waveform at sample_step rate
     // - Special square-wave handling for channel 2 (Fantasy/Nibbler)
     // - ROM bases (Nibbler/Fantasy): ch0=0x000, ch1=0x800, ch2=0x1000
@@ -54,10 +46,7 @@ module snk6502_snd (
     localparam FRAC_ONE    = 32'd65536;
 
     // Per-channel state
-    // SASUKE-SATANSAT-SOUND-2026-08-03: offset/mask widened 8 -> 9 bits. SatanSat
-    // does set_channel_base(1, 0x0800|..., **0x1ff**) (snk6502_a.cpp:1157) - a 9-bit
-    // mask that cannot be held in 8 bits. All other games use 0xff, which is
-    // unchanged by the widening.
+    // offset / mask are 9 bits: Satan of Saturn sets channel 1's mask to 0x1ff; every other game uses 0xff.
     reg [8:0]  ch_offset [0:2];
     reg [12:0] ch_base   [0:2];
     reg [8:0]  ch_mask   [0:2];
@@ -76,14 +65,9 @@ module snk6502_snd (
     reg [7:0] ch_romdata [0:2];
 
     // Music clock divider
-    // SASUKE-SATANSAT-PITCH-2026-08-23: per-game sequencer (tempo) clock.
-    // MAME: sasuke ln2*(18K+1K)*1uF = 75.93 Hz (snk6502_a.cpp:1104) - the
-    // shared 41.2 Hz ran sasuke's music at 54% speed; satansat has no
-    // override and uses the base-device default ln2*(18K*2+1K)*1uF =
-    // 38.99 Hz (:166). Vanguard/Fantasy/Nibbler are 41.6 Hz measured (the
-    // existing 41.2 is within 1%, untouched).
-    // PBALLOON-TEMPO-2026-08-23: pballoon added - 40.3 Hz measured (:958),
-    // was running 2% fast on the shared divider.
+    // Per-game sequencer (tempo) clock, from MAME: Sasuke ln2*(18K+1K)*1uF = 75.93 Hz; Satan of Saturn the default
+    // ln2*(18K*2+1K)*1uF = 38.99 Hz; Pioneer Balloon 40.3 Hz measured; Vanguard / Fantasy / Nibbler 41.6 Hz measured
+    // (41.2 Hz here, within 1%).
     reg [18:0] music_cnt;
     wire [18:0] music_div = game_is_sasuke   ? 19'd148673 :  // 75.93 Hz
                             game_is_satansat ? 19'd289522 :  // 38.99 Hz
@@ -91,15 +75,15 @@ module snk6502_snd (
                                                MUSIC_DIV;    // 41.2 Hz
     wire music_tick = (music_cnt == music_div);
 
-    // Waveform rebuild control (new state-machine registers)
+    // Waveform rebuild control
     reg       wf_wr;
     reg [7:0] wf_data;
     reg [4:0] wf_state;   // 0-31: first 16 = ch0, next 16 = ch1
     reg       wf_busy;
     reg [3:0] ch0_wf_mask, ch1_wf_mask;
-    reg [7:0] ss_last_p0;   // SASUKE-SATANSAT-SOUND-2026-08-03: m_last_port1 equivalent
+    reg [7:0] ss_last_p0;   // previous port value (edge detection)
 
-    // Moved declarations for always-block variables (required for synthesis)
+    // Declarations for always-block variables
     reg [7:0] idx;
     reg signed [31:0] sum;
     reg [31:0] cur_pos;
@@ -116,14 +100,14 @@ module snk6502_snd (
     reg [4:0] wf_bit0, wf_bit1, wf_bit2, wf_bit3;
     reg [4:0] wf_base_val, wf_data_val;
 
-    // VANGUARD-SOUND-2026-08-03: the port-2 ch0 waveform swizzle is PER GAME -
+    // The port-2 ch0 waveform swizzle is PER GAME -
     // the AS1..AS4 pins are wired to different data bits on the two boards.
     //   Fantasy  (snk6502_a.cpp:834): AS1,AS3,AS2,AS4 -> (d&0x9)|((d&2)<<1)|((d&4)>>1)
     //   Vanguard (snk6502_a.cpp:656): AS1,AS2,AS4,AS3 -> (d&0x3)|((d&4)<<1)|((d&8)>>1)
     // ch1 is a plain (data >> 4) on both.
     wire [3:0] ch0_mask_fantasy  = ((wf_data & 8'h09) | ((wf_data & 8'h02) << 1) | ((wf_data & 8'h04) >> 1)) & 8'h0F;
     wire [3:0] ch0_mask_vanguard = ((wf_data & 8'h03) | ((wf_data & 8'h04) << 1) | ((wf_data & 8'h08) >> 1)) & 8'h0F;
-    // SASUKE-SATANSAT-SOUND-2026-08-03: these two feed the waveform from different
+    // these two feed the waveform from different
     // bit-fields, and via DIFFERENT builders (sasuke_build_waveform :202 for ch0,
     // satansat_build_waveform :220 for ch1).
     //   sasuke   (:1028): sasuke_build_waveform((data & 0x0e) >> 1)     [port $B001]
@@ -139,7 +123,7 @@ module snk6502_snd (
                                    game_is_vanguard ? ch0_mask_vanguard : ch0_mask_fantasy;
     wire [3:0] ch1_mask_calc     = game_is_satansat ? ch1_mask_satansat : wf_data[7:4];
 
-    // VANGUARD-SOUND-2026-08-03: sound0_stop_on_rollover. MAME sets it per game on
+    // sound0_stop_on_rollover. MAME sets it per game on
     // every port-0 write: vanguard=1 (:594), fantasy=0 (:779). Constant per game, so
     // tied rather than latched. When set, ch0 self-mutes as its offset wraps to 0
     // (:555) - i.e. Vanguard music is ONE-SHOT. Without this ch0 loops forever.
@@ -243,12 +227,9 @@ module snk6502_snd (
         phase_inc_lut[255] = 32'd510334;
     end
 
-    // SASUKE-SATANSAT-PITCH-2026-08-23: MAME gives these two games their own
-    // music base frequencies - sasuke 35300 Hz (snk6502_a.cpp:1107, "adjusted
-    // (measured through audio recording of pcb)") and satansat 38000 Hz
-    // (:1213, MAME's own value, marked "assumption ... don't modify until
-    // measured/confirmed on pcb"). The shared LUT above encodes the default
-    // ~43 kHz (master/263), so both games played ~3 / ~2 semitones SHARP.
+    // MAME gives these two games their own music base frequencies: Sasuke 35300 Hz ("adjusted (measured through audio
+    // recording of pcb)"), Satan of Saturn 38000 Hz (MAME's assumption, not PCB-measured). The shared LUT above
+    // encodes the default ~43 kHz (master/263).
     // Same convention as phase_inc_lut: round(2^36*freq/(2*11289000*d)),
     // d = idx+1 = 256-period, loaded >>8. Machine-generated; the generator
     // reproduces the existing default table 256/256, validating the formula.
@@ -496,9 +477,7 @@ module snk6502_snd (
                 ch_phase_step[rom_latch_sel] <= 0;
             end else begin
                 idx = 8'd255 - snd_rom_data;
-                // SASUKE-SATANSAT-PITCH-2026-08-23: per-game pitch table
-                // (MAME music_freq: sasuke 35300, satansat 38000, others ~43k).
-                // Original: ch_phase_step[rom_latch_sel] <= phase_inc_lut[idx] >> 8;
+                // per-game pitch table (music base: Sasuke 35300, Satan of Saturn 38000, others ~43k)
                 ch_phase_step[rom_latch_sel] <=
                     (game_is_sasuke   ? phase_inc_lut_sasuke[idx]   :
                      game_is_satansat ? phase_inc_lut_satansat[idx] :
@@ -523,8 +502,7 @@ module snk6502_snd (
     end
 
     //////////////////////////////////////////////////////////////////////////
-    // Phase accumulators + waveform interpolation (exact MAME fixed-point math)
-    // phase[31:0] – waveform index now taken from [27:24] per fix
+    // Phase accumulators + waveform interpolation (MAME's fixed-point math); phase[31:0]: waveform index [27:24]
     //////////////////////////////////////////////////////////////////////////
     always @(posedge clk) begin
         if (reset) begin
@@ -556,7 +534,7 @@ module snk6502_snd (
             wf_m = wf_state[4] ? ch1_wf_mask : ch0_wf_mask;
             wf_j = wf_state[3:0];
             if (ss_wf_mode) begin
-                // SASUKE-SATANSAT-SOUND-2026-08-03: sasuke_build_waveform (ch0, :202)
+                // sasuke_build_waveform (ch0, :202)
                 // and satansat_build_waveform (ch1, :220). These use PLAIN 0/1 bit
                 // weights (not the generic 0/2/4/8), have NO "<<1 if sum<16"
                 // normalisation, and scale by 65535/16 = 4095 instead of
@@ -576,7 +554,7 @@ module snk6502_snd (
                 wf_base_val = (wf_bit0 + wf_bit1 + wf_bit2 + wf_bit3 + 5'd1) / 5'd2;
                 wf_data_val = (wf_j[0] ? wf_bit0 : 5'd0) + (wf_j[1] ? wf_bit1 : 5'd0)
                             + (wf_j[2] ? wf_bit2 : 5'd0) + (wf_j[3] ? wf_bit3 : 5'd0);
-                // TONE-SIGNED-MATH-2026-08-23: zero-guard bit before $signed —
+                // zero-guard bit before $signed —
                 // see the fantasy-path assignment below for why. (This branch's
                 // values max out at 4 so it never actually wrapped; changed for
                 // uniformity only.)
@@ -594,18 +572,9 @@ module snk6502_snd (
             end
             wf_base_val = (wf_bit0 + wf_bit1 + wf_bit2 + wf_bit3 + 5'd1) / 5'd2;
             wf_data_val = (wf_j[0] ? wf_bit0 : 5'd0) + (wf_j[1] ? wf_bit1 : 5'd0) + (wf_j[2] ? wf_bit2 : 5'd0) + (wf_j[3] ? wf_bit3 : 5'd0);
-            // TONE-SIGNED-MATH-2026-08-23: wf_data_val is a 5-bit UNSIGNED reg
-            // that legitimately reaches 16..30 (the <<1 normalisation above
-            // guarantees the four weights sum to >=16, so the all-bits entry
-            // always does). $signed() of a 5-bit value >=16 reinterprets it as
-            // NEGATIVE (28 -> -4), so the loudest entries of every waveform
-            // were computed wildly wrong: 88 of the 256 possible (mask, entry)
-            // table values were corrupted, worst case mask=1 entry=8 = -9816
-            // where MAME's build_waveform gives +3272 - inverted spikes 3x the
-            // intended value, i.e. gross harmonic distortion on every game
-            // that uses this builder (Fantasy/Nibbler/Vanguard/PBalloon).
-            // A zero guard bit makes the 6-bit $signed conversion lossless.
-            // Original: ch_form[wf_state[4]][wf_j] <= ($signed(wf_data_val) - $signed(wf_base_val)) * 16'sd409;
+            // wf_data_val is a 5-bit UNSIGNED reg that reaches 16..30 (the <<1 normalisation above guarantees the four
+            // weights sum to >= 16). A plain $signed() of a 5-bit value >= 16 reads it as NEGATIVE (28 -> -4); the zero
+            // guard bit makes the 6-bit $signed conversion lossless.
             ch_form[wf_state[4]][wf_j] <= ($signed({1'b0, wf_data_val}) - $signed({1'b0, wf_base_val})) * 16'sd409;
             end
             wf_state <= wf_state + 5'd1;
@@ -616,26 +585,20 @@ module snk6502_snd (
     end
 
     //////////////////////////////////////////////////////////////////////////
-    // CPU port writes – decoded exactly as fantasy_sound_device::sound_w
-    // (Nibbler/Fantasy path). wr3 handles ch2 base.
+    // CPU port writes, decoded as MAME's Fantasy sound handler (Fantasy / Nibbler / Pioneer Balloon). wr3: ch2 base.
     //////////////////////////////////////////////////////////////////////////
     always @(posedge clk) begin
         if (reset) begin
-            // initial state (MAME device_start + set_music_freq)
+            // initial state (as MAME's power-on state)
             ch_mute[0]   <= 1'b1;
             ch_mute[1]   <= 1'b1;
             ch_mute[2]   <= 1'b1;
             ch_offset[0] <= 0; ch_offset[1] <= 0; ch_offset[2] <= 0;
             ch_mask[0]   <= 9'h0ff; ch_mask[1] <= 9'h0ff; ch_mask[2] <= 9'h0ff;
-            // WIDTH-FIX-2026-08-03: these were 11'h0000/11'h0800/11'h1000, but ch_base
-            // is reg [12:0]. 0x800 and 0x1000 do NOT fit in 11 bits, so both reset
-            // values silently truncated to 0. Caught by verilator --lint-only.
-            // (Only affects state before the first port write - the wr1/wr3 handlers
-            // already use correct 13'h literals - but it was wrong as written.)
             ch_base[0]   <= 13'h0000;
             ch_base[1]   <= 13'h0800;
             ch_base[2]   <= 13'h1000;          // ch2 starts at $1000 (high bits set on writes)
-            wf_wr        <= 1'b0;              // rebuild trigger must start cleared (was power-up undefined)
+            wf_wr        <= 1'b0;              // rebuild trigger must start cleared
             ss_last_p0   <= 8'h00;
 
             // Channel 2 is always a square wave (MAME special case). Initialize at reset.
@@ -648,19 +611,16 @@ module snk6502_snd (
                 ch_offset[0] <= ch0_offset_next;
                 ch_offset[1] <= (ch_offset[1] + 9'd1) & ch_mask[1];
                 ch_offset[2] <= (ch_offset[2] + 9'd1) & ch_mask[2];
-                // MAME sound_stream_update (:555): after ALL offsets advance,
-                //   if (tone_channels[0].offset == 0 && sound0_stop_on_rollover)
-                //       tone_channels[0].mute = 1;
-                // Vanguard only. Note it tests the POST-increment offset.
+                // Vanguard only (as MAME): after ALL offsets advance, ch0 mutes when its POST-increment offset is 0.
                 if (sound0_stop_on_rollover && (ch0_offset_next == 9'd0))
                     ch_mute[0] <= 1'b1;
             end
             if (wr0) begin
                 if (game_is_vanguard) begin
-                    // MAME vanguard_sound_device::sound_w offset 0 (snk6502_a.cpp:577-617)
+                    // Vanguard port 0 (as MAME's Vanguard sound handler)
                     //   bits 0-2 : MUSIC A8..A10  -> ch0 base
-                    //   bit 3    : mute_channel(0)     <- SET-ONLY
-                    //   bit 4    : unmute_channel(0)   <- SET-ONLY, SAME channel
+                    //   bit 3    : mute ch0     <- SET-ONLY
+                    //   bit 4    : unmute ch0   <- SET-ONLY, SAME channel
                     //   bit 5/6/7: SHOT A / SHOT B / BOMB (samples + SN76477 #2, not modelled)
                     // Bits 3 and 4 are INDEPENDENT set-only actions: if neither is set the
                     // mute state is LEFT UNCHANGED. This is a different machine from the
@@ -668,21 +628,20 @@ module snk6502_snd (
                     // Two sequential ifs (not if/else) so that if BOTH are set, unmute wins,
                     // matching MAME's statement order.
                     ch_base[0] <= {sound_port0[2:0], 8'h00};
-                    if (sound_port0[3]) begin           // mute_channel(0): mute + offset=0
+                    if (sound_port0[3]) begin           // mute ch0: mute + offset = 0
                         ch_mute[0]   <= 1'b1;
                         ch_offset[0] <= 0;
                     end
-                    if (sound_port0[4]) begin           // unmute_channel(0): offset=0 only on edge
+                    if (sound_port0[4]) begin           // unmute ch0: offset = 0 only on the edge
                         if (ch_mute[0]) ch_offset[0] <= 0;
                         ch_mute[0]   <= 1'b0;
                     end
                     // Vanguard has NO port 3 and never unmutes ch2 (its bit 4 targets ch0),
                     // so channel 2 must be left alone here - it stays muted from reset.
-                    // The old shared code drove ch2 from bit 4, adding a spurious 3rd voice.
                 end else begin
-                    // fantasy / nibbler / pballoon offset 0 (snk6502_a.cpp:762-795) - UNCHANGED
+                    // Fantasy / Nibbler / Pioneer Balloon port 0
                     ch_base[0]   <= {sound_port0[2:0], 8'h00};
-                    // ch0: reset offset on mute OR on mute->unmute edge (MAME mute_channel / unmute_channel)
+                    // ch0: reset offset on mute OR on the mute->unmute edge
                     if (sound_port0[3] == 1'b0 || ch_mute[0]) ch_offset[0] <= 0;
                     ch_mute[0]   <= ~sound_port0[3];
                     // ch2: same rule
@@ -715,11 +674,7 @@ module snk6502_snd (
             end
 
             // ---- SASUKE / SATANSAT sound ports ($B000/$B001) ---------------------
-            // SASUKE-SATANSAT-SOUND-2026-08-03. These were NOT DECODED AT ALL before,
-            // so neither game could make any sound regardless of the rest of this
-            // module. MAME: sasuke_sound_device::sound_w (:970),
-            // satansat_sound_device::sound_w (:1119). All port data arrives on
-            // sound_port0 (every sound_portN is tied to cpu_dout at the instance).
+            // All port data arrives on sound_port0 (every sound_portN is tied to cpu_dout at the instance).
             //
             // NOT MODELLED (deliberate, flagged): the sample channels (sasuke
             // hit/boss-start/shot/boss-attack on port0 bits 0-3; satansat port0 bit2)
@@ -727,20 +682,19 @@ module snk6502_snd (
             // playback / an SN76477 model, neither of which exists in this core.
             if (ss_wr0) begin
                 if (game_is_sasuke) begin
-                    // :997-1005 - bit 7 is the ch0 mute control, EDGE sensitive.
-                    // Rising: reset_offset(0) THEN unmute_channel(0). MAME notes this
-                    // is the only game needing the explicit offset reset on unmute.
+                    // Sasuke: bit 7 is the ch0 mute control, EDGE sensitive. Rising: offset = 0, then unmute (the only
+                    // game that resets the offset on unmute).
                     if (sound_port0[7] & ~ss_last_p0[7]) begin
                         ch_offset[0] <= 0;
                         ch_mute[0]   <= 1'b0;
                     end
                     else if (~sound_port0[7] & ss_last_p0[7]) begin
-                        ch_mute[0]   <= 1'b1;   // mute_channel(0) also zeroes offset
+                        ch_mute[0]   <= 1'b1;   // mute also zeroes the offset
                         ch_offset[0] <= 0;
                     end
                 end else begin
-                    // satansat :1137-1144
-                    if (sound_port0[3]) begin   // bit3 -> mute_channel(0)
+                    // Satan of Saturn
+                    if (sound_port0[3]) begin   // bit3 -> mute ch0
                         ch_mute[0]   <= 1'b1;
                         ch_offset[0] <= 0;
                     end
@@ -753,26 +707,26 @@ module snk6502_snd (
 
             if (ss_wr1) begin
                 if (game_is_sasuke) begin
-                    // :1023-1028  base = 0x0000 | ((data & 0x70) << 4) -> data[6:4] at addr[10:8]
+                    // base = 0x0000 | ((data & 0x70) << 4) -> data[6:4] at addr[10:8]
                     ch_base[0] <= {2'b00, sound_port0[6:4], 8'h00};
-                    wf_data    <= sound_port0;   // bits 3:1 -> sasuke_build_waveform
+                    wf_data    <= sound_port0;   // bits 3:1 -> Sasuke waveform build
                     wf_wr      <= 1'b1;
                 end else begin
-                    // satansat :1156-1167
+                    // Satan of Saturn
                     // ch0 base = 0x0000 | ((data & 0x0e) << 7) -> data[3:1] at addr[10:8]
                     ch_base[0] <= {2'b00, sound_port0[3:1], 8'h00};
                     // ch1 base = 0x0800 | ((data & 0x60) << 4) -> data[6:5] at addr[10:9]
                     // and mask 0x1ff (the reason ch_mask/ch_offset are 9 bits).
                     ch_base[1] <= 13'h0800 | {2'b00, sound_port0[6:5], 9'd0};
                     ch_mask[1] <= 9'h1ff;
-                    if (sound_port0[0]) begin                  // unmute_channel(0)
+                    if (sound_port0[0]) begin                  // unmute ch0
                         if (ch_mute[0]) ch_offset[0] <= 0;
                         ch_mute[0] <= 1'b0;
                     end
-                    if (sound_port0[4]) begin                  // unmute_channel(1)
+                    if (sound_port0[4]) begin                  // unmute ch1
                         if (ch_mute[1]) ch_offset[1] <= 0;
                         ch_mute[1] <= 1'b0;
-                    end else begin                             // mute_channel(1)
+                    end else begin                             // mute ch1
                         ch_mute[1]   <= 1'b1;
                         ch_offset[1] <= 0;
                     end
@@ -782,8 +736,7 @@ module snk6502_snd (
     end
 
     //////////////////////////////////////////////////////////////////////////
-    // Audio output – 3-channel interpolated sum (exact MAME sound_stream_update)
-    // Waveform index now [27:24], frac now [23:8] per fix
+    // Audio output - 3-channel interpolated sum (MAME's fixed-point math): waveform index [27:24], frac [23:8]
     //////////////////////////////////////////////////////////////////////////
     always @(posedge clk) begin
         if (reset) begin
@@ -798,35 +751,15 @@ module snk6502_snd (
                     prev_val = ch_form[i][prev_idx];
                     cur_val  = ch_form[i][cur_idx];
                     frac = cur_pos[23:8];
-                    // TONE-SIGNED-MATH-2026-08-23: frac is an UNSIGNED reg, and
-                    // one unsigned operand makes Verilog evaluate the WHOLE
-                    // expression unsigned (prev_val/cur_val zero-extended, `>>`
-                    // logical). Net effect: every negative interpolated sample
-                    // came out as (true value + 65536), which after sum[18:3]
-                    // was a +8192 step at the output each time a channel's
-                    // sample went negative - a loud square wave overlaid on the
-                    // music at the tone frequency, plus glitches at zero
-                    // crossings where prev/cur signs differ. Verified: 75% of
-                    // random samples wrong under the old semantics. Zero-guard
-                    // $signed casts keep everything signed; >>> for the
-                    // arithmetic shift.
-                    // Original: interp = ((prev_val * (FRAC_ONE - frac)) +
-                    // Original:           (cur_val  * frac)) >> FRAC_BITS;
+                    // frac is UNSIGNED, and one unsigned operand makes Verilog evaluate the WHOLE expression unsigned
+                    // (zero-extended, logical shift): zero-guard $signed casts keep it signed, >>> shifts arithmetically.
                     interp = ((prev_val * $signed({1'b0, FRAC_ONE - frac})) +
                               (cur_val  * $signed({1'b0, frac}))) >>> FRAC_BITS;
                     sum = sum + interp;
                 end
             end
-            // TONE-LEVEL-2026-08-23: was sum[18:3] (/8). With the signed-math
-            // fixes above, the true tone level at /8 peaks only ~2300 (7% FS)
-            // - buried under speech and effects, and ~6 dB quieter than the
-            // (distorted) level everyone has been hearing, because the old
-            // interpolation error added a spurious +-4096 square component.
-            // /2 restores the familiar loudness, clean, and sits music where
-            // MAME routes it (custom at 0.50). Worst-case |sum|: fantasy path
-            // 3 ch x 15 x 409 = 18405, sasuke/satansat 2 ch x 2 x 4095 =
-            // 16380 -> sum[16:1] peaks 9202, no 16-bit overflow possible.
-            // Original: audio_out <= sum[18:3];
+            // sum[16:1] (/2) sits music where MAME routes it (custom at 0.50). Worst-case |sum|: Fantasy path
+            // 3 ch x 15 x 409 = 18405, Sasuke / Satan of Saturn 2 ch x 2 x 4095 = 16380 -> peaks 9202, no overflow.
             audio_out <= sum[16:1];
         end
     end

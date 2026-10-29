@@ -33,7 +33,7 @@ module hd38880_unpack (
     // control
     input  wire        start,          // pulse: begin phrase at start_addr
     input  wire [19:0] start_addr,     // byte address from ADSET
-    // SPEECH-PHRASE-END-2026-08-23: first byte past the phrase (from
+    // first byte past the phrase (from
     // hd38880_ctrl's table). Vanguard's ROM has no amp==63 stop markers and
     // its host never sends STOP - phrases are bounded by the next table
     // address, which nothing implemented before.
@@ -61,8 +61,7 @@ module hd38880_unpack (
     // ---- bit reservoir: shift bytes in LSB-first --------------------------
     reg [63:0] resv;          // right-aligned reservoir, bit 0 = next bit out
     reg [6:0]  nbits;         // bits currently in reservoir
-    reg        fetch_skip;    // SPEECH-RESTART-2026-08-23: discard one stale
-                              // rom_valid after a mid-phrase restart
+    reg        fetch_skip;    // discard one stale rom_valid after a mid-phrase restart
 
     // take W bits LSB-first from the reservoir (combinational views)
     wire [5:0] pk_amp = resv[5:0];
@@ -78,12 +77,8 @@ module hd38880_unpack (
             state <= S_IDLE; frame_valid <= 1'b0; nbits <= 0;
             fetch_skip <= 1'b0;
         end
-        // SPEECH-RESTART-2026-08-23: START is honoured in ANY state, not only
-        // S_IDLE. Vanguard never sends STOP and its data has no stop marker,
-        // so under the old S_IDLE-only rule the FIRST phrase ever started
-        // locked this FSM in S_FILL/S_WAIT for good and every later START was
-        // ignored - the "zero speech in Vanguard" defect. The real chip
-        // restarts synthesis from the new ADSET address on START at any time.
+        // START is honoured in ANY state, not only S_IDLE: the real chip restarts synthesis from the new ADSET address
+        // on START at any time, and Vanguard never sends STOP (its data has no stop marker either).
         else if (start) begin
             rom_addr <= start_addr;
             nbits    <= 0;
@@ -114,20 +109,12 @@ module hd38880_unpack (
                     rom_addr <= rom_addr + 20'd1;
                 end
             end
-            // SPEECH-PHRASE-END-2026-08-23: bitstream exhausted at the next
+            // bitstream exhausted at the next
             // table address -> phrase over (Vanguard's only end condition).
             else if (rom_addr >= end_addr)
                 state <= S_DONE;
-            // SPEECH-ROMFETCH-2026-08-23: request only when no fetch is in
-            // flight. The old unconditional `rom_rd <= 1'b1` re-requested
-            // while waiting out rom_valid's 1-cycle latency, so rom_rd was
-            // high for 2 cycles, rom_valid answered for 2 cycles, and every
-            // byte was appended TWICE while rom_addr advanced by two: the
-            // parser was fed "byte N, byte N, skip byte N+1" for the whole
-            // phrase, in both games. One fetch = one append now (3 clks/byte,
-            // ample for the ~6 bytes per 20 ms frame the format needs).
-            // Original: else
-            // Original:     rom_rd <= 1'b1;
+            // request only when no fetch is in flight: re-requesting while rom_valid's 1-cycle latency runs would
+            // append every byte twice. One fetch = one append (3 clks/byte, ample for ~6 bytes per 20 ms frame).
             else if (!rom_rd)
                 rom_rd <= 1'b1;
         end

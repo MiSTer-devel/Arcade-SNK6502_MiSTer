@@ -2,7 +2,7 @@
 // hd38880_ctrl.v
 //
 // Hitachi HD38880 speech synthesizer - host command interface decoder.
-// Modelled on MAME's snk6502_speech_w() (audio/snk6502.c), which is the
+// Modelled on MAME's SNK6502 speech write handler (snk6502_a.cpp), which is the
 // authoritative public description of the command protocol as used by
 // SNK Vanguard (1981) and Fantasy (1981).
 //
@@ -43,7 +43,7 @@ module hd38880_ctrl #(
     output reg  [3:0]  phrase,    // phrase index 0..15 (valid with start)
     output reg         phrase_ok, // ADSET address matched the table
     output reg  [19:0] adset_addr,// raw 20-bit speech-ROM start address
-    // SPEECH-PHRASE-END-2026-08-23: first byte past the matched phrase, for
+    // first byte past the matched phrase, for
     // hd38880_unpack's end-of-phrase bound. Vanguard's ROM has no amp==63
     // stop markers and its host never sends STOP - each phrase is bounded by
     // the next table address (README section 4; last programmed byte $5604).
@@ -129,7 +129,7 @@ module hd38880_ctrl #(
         end
     endfunction
 
-    // SPEECH-PHRASE-END-2026-08-23: end of phrase idx = start of phrase idx+1.
+    // end of phrase idx = start of phrase idx+1.
     // Vanguard's last phrase ends after programmed byte $5604 -> end $5605;
     // Fantasy's last phrase is bounded by the ROM end $57FF -> end $5800.
     function [19:0] end_lookup;
@@ -168,7 +168,7 @@ module hd38880_ctrl #(
             state      <= S_IDLE;
             adset_cnt  <= 3'd0;
             adset_addr <= 20'd0;
-            end_addr   <= 20'hFFFFF;   // SPEECH-PHRASE-END-2026-08-23
+            end_addr   <= 20'hFFFFF;
             int1_cfg   <= 4'd0;
             int2_cfg   <= 4'hf;   // Vanguard/Fantasy default: 48b, 20ms, rpt, 10 ops
             syspd      <= 4'd9;   // 1.0x
@@ -193,7 +193,7 @@ module hd38880_ctrl #(
                         // FSM guarantees that, so just check the table match.
                         phrase    <= match_idx;
                         phrase_ok <= match_hit;
-                        end_addr  <= end_lookup(match_idx); // SPEECH-PHRASE-END-2026-08-23
+                        end_addr  <= end_lookup(match_idx);
                         if (match_hit)
                             start <= 1'b1;
                     end

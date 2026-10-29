@@ -44,11 +44,8 @@
 module parcor_lattice #(
     parameter CLK_HZ      = 12_000_000,
     parameter SAMPLE_HZ   = 8_000,
-    // SPEECH-ALPHA-OVERFLOW-2026-08-04: was 10'sd508. The "no loss" case below
-    // needs the value 512 (= 1.0 in Q9), and 512 DOES NOT FIT IN 10-BIT SIGNED
-    // (max 511) - it wrapped to -512, i.e. gain -1.0, inverting the backward
-    // wave at every lattice stage. Widened to 11 bits so both branches are
-    // representable. Original: parameter ALPHA_Q9 = 10'sd508;
+    // 11-bit: the "no loss" case below needs 512 (= 1.0 in Q9), which does not fit 10-bit signed (it would wrap to
+    // -512, inverting the backward wave at every lattice stage).
     parameter ALPHA_Q9    = 11'sd508      // 0.992 * 512 = 507.9
 )(
     input  wire               clk,
@@ -78,8 +75,7 @@ module parcor_lattice #(
     output reg                audio_stb     // 1-clk pulse at each new sample
 );
 
-    // Reassemble the flattened k*_in ports into the array shape the rest of
-    // this module (unchanged below) was written against.
+    // Reassemble the flattened k*_in ports into an array.
     wire signed [9:0] k_in [0:9];
     assign k_in[0]=k1_in; assign k_in[1]=k2_in; assign k_in[2]=k3_in; assign k_in[3]=k4_in;
     assign k_in[4]=k5_in; assign k_in[5]=k6_in; assign k_in[6]=k7_in; assign k_in[7]=k8_in;
@@ -100,7 +96,7 @@ module parcor_lattice #(
 
     reg signed [9:0] k_tgt  [0:9];   // target (new frame)
     reg signed [9:0] k_cur  [0:9];   // interpolated, in use
-    // SPEECH-INTERP-2026-08-04: fixed per-substep delta for TRUE linear interp.
+    // fixed per-substep delta for linear interpolation.
     // 11-bit so (k_in - k_cur) cannot overflow before the >>>3.
     reg signed [10:0] k_step [0:9];
     reg        [7:0] amp_tgt, amp_cur;
@@ -138,7 +134,7 @@ module parcor_lattice #(
     // triangular pulse shape: rises for the first few samples of the period.
     wire [7:0] tri_len = 8'd8;
 
-    // SPEECH-EXCITE-2026-08-04: unvoiced UGAIN = 1.3 (reference), approximated
+    // unvoiced UGAIN = 1.3 (reference), approximated
     // as amp + amp/4 + amp/16 = amp*1.3125. Named wire because Quartus 17.0
     // elaborates .v as Verilog-2001 (no expression bit-select).
     wire [10:0] amp_ugain = {3'd0, amp_cur} + {5'd0, amp_cur[7:2]} + {7'd0, amp_cur[7:4]};
@@ -153,53 +149,23 @@ module parcor_lattice #(
             lfsr <= {lfsr[14:0], lfsr[15]^lfsr[13]^lfsr[12]^lfsr[10]};
 
             if (!voiced) begin
-                // SPEECH-EXCITE-2026-08-04: reference scales unvoiced excitation
-                // by UGAIN = 1.3 (golden/hd38880_decode.py: `e = gg*nz*UGAIN`);
-                // this had no such term. amp*1.3125 = amp + amp/4 + amp/16.
-                // Original: excite <= lfsr[0] ?  $signed({7'd0, amp_cur})
-                //                            : -$signed({7'd0, amp_cur});
+                // unvoiced excitation scaled by UGAIN = 1.3 (reference decoder hd38880_decode.py: `e = gg*nz*UGAIN`):
+                // amp*1.3125 = amp + amp/4 + amp/16.
                 excite <= lfsr[0] ?  $signed({4'd0, amp_ugain})
                                   : -$signed({4'd0, amp_ugain});
             end else begin
                 if (pitch_cnt >= pitch_eff - 1) pitch_cnt <= 8'd0;
                 else                            pitch_cnt <= pitch_cnt + 8'd1;
 
-                // SPEECH-NOTRI-2026-08-04: the triangular branch is DISABLED.
-                //
-                // `tri_src` = INT1 bit 3. Fantasy alternates INT1 $44/$48 per
-                // phrase (INT1_FAN = 48 48 44 44 44 48 48 48 44 44 48 44), so
-                // SIX OF TWELVE phrases were selecting triangular excitation.
-                // The reference decoder NEVER uses it — golden/hd38880_decode.py
-                // is unconditionally `e = gg*6.0 if pc==0`, with the note that
-                // triangular "measures far worse on band-profile error (5.6 vs
-                // 0.9 dB), so these games select impulse." That reference is the
-                // one the user confirmed BY EAR sounds correct.
-                //
-                // Measured, Fantasy phrase 0 ($48) vs Fable's raw lattice:
-                //   tri_src active  = 0.1529 correlation
-                //   impulse (below) = see note; phrase 2 ($44) is 0.5102
-                // This is why the first HW build still sounded garbled: phrase 2
-                // (a $44/impulse phrase) was the only one validated in sim, so
-                // the triangular path was never exercised before hardware.
-                //
-                // `tri_src` is left as a port (harmless, now unused) rather than
-                // ripped out, in case real evidence for the mode ever appears.
-                //
-                // Original: if (tri_src) begin
-                // Original:     if (pitch_cnt < tri_len)
-                // Original:         excite <= $signed({7'd0, amp_cur}) -
-                // Original:                   $signed({7'd0, amp_cur}) * $signed({1'b0,pitch_cnt[6:0]}) / tri_len;
-                // Original:     else
-                // Original:         excite <= 15'sd0;
-                // Original: end else begin
+                // Impulse excitation only; the triangular branch is DISABLED. `tri_src` = INT1 bit 3, which Fantasy
+                // selects on 6 of its 12 phrases, but the reference decoder (hd38880_decode.py) never uses it:
+                // triangular "measures far worse on band-profile error (5.6 vs 0.9 dB), so these games select
+                // impulse." (Fantasy phrase 0 with triangular: 0.15 correlation to the reference lattice.)
+                // `tri_src` stays an (unused) port in case real evidence for the mode ever appears.
                 begin
-                    // SPEECH-EXCITE-2026-08-04: reference impulse height is
-                    // `gg*6.0`, not amp<<3 (= x8), and it ADDS aspiration noise
-                    // `gg*VMIX*nz` (VMIX = 0.08) on voiced frames because "the
-                    // real chip is not purely periodic". Both were missing.
+                    // reference impulse height `gg*6.0`, plus aspiration noise `gg*VMIX*nz` (VMIX = 0.08) on voiced
+                    // frames because "the real chip is not purely periodic":
                     //   x6 = (amp<<3) - (amp<<1);  aspiration ~= amp>>4 (0.0625)
-                    // Original: excite <= (pitch_cnt == 8'd0) ? $signed({4'd0, amp_cur, 3'd0})
-                    //                                         : 15'sd0;
                     excite <= (pitch_cnt == 8'd0)
                         ? ($signed({4'd0, amp_cur, 3'd0}) - $signed({6'd0, amp_cur, 1'd0}))
                           + (lfsr[0] ?  $signed({11'd0, amp_cur[7:4]})
@@ -234,12 +200,7 @@ module parcor_lattice #(
     wire signed [14:0] b_raw  = b_delay[stage-1];
 
     // apply vocal-tract loss to the reflected (backward) wave
-    // SPEECH-ALPHA-OVERFLOW-2026-08-04: `10'sd512` wrapped to -512 (10-bit signed
-    // maxes at 511), so every INT1=$48 phrase (loss_en=0 => "alpha = 1.0") ran the
-    // lattice with a backward-wave gain of MINUS one. All six of Fantasy's $48
-    // phrases were garbage on HW; the $44 phrases used ALPHA_Q9=508, which fits,
-    // and phrase 2 ($44) is the one that sounded correct.
-    // Original: wire signed [25:0] b_loss_p = b_raw * (loss_en ? ALPHA_Q9 : 10'sd512);
+    // (loss off = alpha 1.0 = 512 in Q9: needs the 11-bit constant)
     wire signed [25:0] b_loss_p = b_raw * (loss_en ? ALPHA_Q9 : 11'sd512);
     wire signed [14:0] b_loss   = b_loss_p >>> 9;
 
@@ -284,14 +245,8 @@ module parcor_lattice #(
                     audio_stb <= 1'b1;
                     // shift the backward delay line for the next sample
                     b_delay[0] <= f_val;
-                    // SPEECH-LATTICE-DELAY-2026-08-23: b_new[0] is written on
-                    // THIS same edge (the b_new[stage-1] assignment above with
-                    // stage==1), so reading it here picked up the PREVIOUS
-                    // sample's value: stage 2's backward input ran one sample
-                    // late, skewing the filter response of every phrase. Use
-                    // the freshly computed value (same expression) instead.
-                    // Original: for (n = 1; n < 10; n = n + 1)
-                    // Original:     b_delay[n] <= b_new[n-1];
+                    // b_new[0] is written on THIS same edge (the b_new[stage-1] assignment above with stage==1), so the
+                    // freshly computed value (same expression) is used, not the register.
                     b_delay[1] <= b_loss + (p_kf >>> 9);
                     for (n = 2; n < 10; n = n + 1)
                         b_delay[n] <= b_new[n-1];
@@ -308,37 +263,14 @@ module parcor_lattice #(
     //-------------------------------------------------------------------------
     // Frame latch + LINEAR parameter interpolation
     //
-    // SPEECH-INTERP-2026-08-04: this block was the speech defect. Three bugs,
-    // all found by diffing against golden/hd38880_decode.py's synth(), which the
-    // user CONFIRMED BY EAR sounds correct (its raw lattice output, with no
-    // output filter chain at all, is right).
-    //
-    //  1. NOT ACTUALLY LINEAR. The old code did
-    //         cur <= cur + ((tgt - cur) >>> 3)
-    //     which moves 1/8 of the REMAINING distance each substep - a geometric
-    //     decay. After all 8 substeps it has covered only 1-(7/8)^8 = 66% of the
-    //     way, so **the coefficients NEVER REACH the frame's values**. Every
-    //     frame was synthesised with k/amp/pitch permanently lagging ~34% of each
-    //     step. The reference is true linear (`prev + (tgt-prev)*t`, t = n/8) and
-    //     lands exactly on target. Now: precompute a fixed per-substep delta and
-    //     SNAP to the target on the final substep so the endpoint is exact.
-    //
-    //  2. AMPLITUDE AND PITCH MUST NOT BE INTERPOLATED AT ALL. The reference
-    //     applies gain immediately (`gg=cur[0]`) and uses the pitch period
-    //     directly; its comment notes that interpolating gain "lags the real
-    //     envelope on decays and leaves an audible tail after each word".
-    //     Interpolating PITCH was worse than cosmetic: `voiced` is derived from
-    //     `pitch_cur != 0`, so a voiced<->unvoiced transition GLIDED THROUGH FAKE
-    //     INTERMEDIATE PITCHES instead of switching cleanly. Both now load
-    //     immediately at frame_we.
-    //
-    //  3. NO VOICED/UNVOICED INHIBIT. The reference forces t=1.0 for the whole
-    //     frame when voicing changes (`vchg`), "so that consonant onsets stay
-    //     crisp instead of gliding out of the vowel". Now implemented: on a
-    //     voicing change the k's snap straight to target.
-    //
-    // ORIGINAL BLOCK IS COMMENTED OUT AT THE BOTTOM OF THIS BLOCK - restore it
-    // verbatim to revert.
+    // As the reference decoder (hd38880_decode.py, raw lattice output):
+    //  1. k's are TRULY linear (`prev + (tgt-prev)*t`, t = n/8): a fixed per-substep delta, SNAPPED to the target on
+    //     the final substep so the endpoint is exact.
+    //  2. Amplitude and pitch are NOT interpolated: both load at frame_we. Interpolated gain "lags the real envelope
+    //     on decays and leaves an audible tail after each word"; `voiced` = `pitch_cur != 0`, so an interpolated pitch
+    //     would glide a voiced<->unvoiced transition through fake intermediate pitches.
+    //  3. Voicing change => no k interpolation that frame (`vchg`), "so that consonant onsets stay crisp instead of
+    //     gliding out of the vowel".
     //-------------------------------------------------------------------------
     always @(posedge clk) begin
         if (rst) begin
@@ -356,7 +288,7 @@ module parcor_lattice #(
         end
         else begin
             if (frame_we) begin
-                // amp + pitch: applied IMMEDIATELY, never interpolated (bug 2).
+                // amp + pitch: applied IMMEDIATELY, never interpolated (2).
                 amp_cur   <= amp_in;
                 amp_tgt   <= amp_in;
                 pitch_cur <= pitch_in;
@@ -364,7 +296,7 @@ module parcor_lattice #(
 
                 for (n = 0; n < 10; n = n + 1) k_tgt[n] <= k_in[n];
 
-                // voicing change => no k interpolation this frame (bug 3)
+                // voicing change => no k interpolation this frame (3)
                 if ((pitch_in == 8'd0) != (pitch_cur == 8'd0)) begin
                     for (n = 0; n < 10; n = n + 1) begin
                         k_cur[n]  <= k_in[n];
@@ -372,7 +304,7 @@ module parcor_lattice #(
                     end
                 end
                 else begin
-                    // fixed per-substep delta = (target - current)/8 (bug 1).
+                    // fixed per-substep delta = (target - current)/8 (1).
                     // k_step is 11-bit so the subtraction cannot overflow.
                     for (n = 0; n < 10; n = n + 1)
                         k_step[n] <= (k_in[n] - k_cur[n]) >>> 3;
@@ -398,40 +330,5 @@ module parcor_lattice #(
         end
     end
 
-    // SPEECH-INTERP-2026-08-04 - ORIGINAL BLOCK, uncomment to revert:
-    // always @(posedge clk) begin
-    //     if (rst) begin
-    //         samp_cnt   <= 10'd0;
-    //         interp_idx <= 4'd0;
-    //         amp_cur    <= 8'd0;
-    //         amp_tgt    <= 8'd0;
-    //         pitch_cur  <= 8'd0;
-    //         pitch_tgt  <= 8'd0;
-    //         for (n = 0; n < 10; n = n + 1) begin
-    //             k_cur[n] <= 10'sd0;
-    //             k_tgt[n] <= 10'sd0;
-    //         end
-    //     end
-    //     else begin
-    //         if (frame_we) begin
-    //             amp_tgt   <= amp_in;
-    //             pitch_tgt <= pitch_in;
-    //             for (n = 0; n < 10; n = n + 1) k_tgt[n] <= k_in[n];
-    //             samp_cnt   <= 10'd0;
-    //             interp_idx <= 4'd0;
-    //         end
-    //         else if (sample_tick) begin
-    //             samp_cnt <= samp_cnt + 10'd1;
-    //             if (samp_cnt % SUBSTEP == 0 && interp_idx < 4'd8) begin
-    //                 // move 1/8 of the remaining distance toward the target
-    //                 amp_cur   <= amp_cur   + ((amp_tgt   - amp_cur)   >>> 3);
-    //                 pitch_cur <= pitch_cur + ((pitch_tgt - pitch_cur) >>> 3);
-    //                 for (n = 0; n < 10; n = n + 1)
-    //                     k_cur[n] <= k_cur[n] + ((k_tgt[n] - k_cur[n]) >>> 3);
-    //                 interp_idx <= interp_idx + 4'd1;
-    //             end
-    //         end
-    //     end
-    // end
 
 endmodule
