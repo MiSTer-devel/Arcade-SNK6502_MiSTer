@@ -68,9 +68,6 @@ localparam CONF_STR = {
 	"P2OQ,Dim video after 10s,On,Off;",
 	"-;",
 	"R0,Reset;",
-	// Button 1..4 = ABXY (SNES face-button layout: A=right, B=down, X=up, Y=left).
-	// For Vanguard, ABXY map directly onto fire-right/down/up/left.
-	// For 1-button games (Pballoon/Fantasy), all four ABXY fire.
 	"J1,Button 1,Button 2,Button 3,Button 4,Coin,Start 1P,Start 2P,Pause;",
 	"jn,A,B,X,Y,Select,Start,R,L;",
 	"V,v",`BUILD_DATE
@@ -78,17 +75,17 @@ localparam CONF_STR = {
 
 ////////////////////   CLOCKS   ///////////////////
 
-wire clk_vid;      // ~45 MHz video clock
-wire clk_master;   // ~11.289 MHz game master clock
+wire clk_vid;
+wire clk_master;
 wire pll_locked;
 
 pll pll
 (
     .refclk(CLK_50M),
     .rst(0),
-    .outclk_0(clk_vid),      // ~45 MHz
-    .outclk_1(),              // ~22.5 MHz (unused for now)
-    .outclk_2(clk_master),   // ~11.289 MHz
+    .outclk_0(clk_vid),
+    .outclk_1(),
+    .outclk_2(clk_master),
     .locked(pll_locked)
 );
 
@@ -112,7 +109,7 @@ wire  [7:0] ioctl_dout;
 wire  [7:0] ioctl_din;
 
 wire [15:0] joystick_0, joystick_1;
-wire [15:0] joystick_r_analog_0;   // right analog stick: [15:8]=Y signed, [7:0]=X signed
+wire [15:0] joystick_r_analog_0;
 wire [10:0] ps2_key;
 
 wire [21:0] gamma_bus;
@@ -150,13 +147,11 @@ hps_io #(.CONF_STR(CONF_STR)) hps_io
 assign ioctl_upload_req = 1'b0;
 assign ioctl_din        = 8'd0;
 
-// Game ID - loaded from .mra via ioctl_index 1
 reg [3:0] game_id;
 always @(posedge clk_sys)
 	if (ioctl_wr && ioctl_index == 8'd1 && ioctl_addr == 25'd0)
 		game_id <= ioctl_dout[3:0];
 
-// PAUSE SYSTEM
 wire        pause_cpu;
 wire [8:0]  rgb_out;
 pause #(3,3,3,24) pause (
@@ -171,34 +166,27 @@ pause #(3,3,3,24) pause (
 
 ///////////////////   CONTROLS   ////////////////////
 
-// ----- PS/2 Keyboard -----
-// controllers.sv ctl_keyboard: keys act on press, extended bit ignored; L shift / Space are extra keys (kbx[0] / kbx[1]).
 wire [12:0] kb;
 wire  [1:0] kbx;
 ctl_keyboard #(.NX(2), .NXO(2), .XKEYS({24'h10_29_01, 24'h10_12_00})) keyboard
 	(.clk(clk_sys), .ps2_key(ps2_key), .pause(pause_cpu), .kb(kb), .kbx(kbx));
-wire btn_up       = kb[0];    // up
-wire btn_down     = kb[1];    // down
-wire btn_left     = kb[2];    // left
-wire btn_right    = kb[3];    // right
-wire btn_fire1    = kb[4];    // L ctrl  = Button 1 (A)
-wire btn_fire2    = kbx[0];   // L shift = Button 2 (B)
-wire btn_fire3    = kb[5];    // L alt   = Button 3 (X)
-wire btn_fire4    = kbx[1];   // space   = Button 4 (Y)
-wire btn_coin1    = kb[8];    // 5
-wire btn_coin2    = kb[9];    // 6
-wire btn_1p_start = kb[6];    // 1
-wire btn_2p_start = kb[7];    // 2
-wire btn_pause    = kb[12];   // P
+wire btn_up       = kb[0];
+wire btn_down     = kb[1];
+wire btn_left     = kb[2];
+wire btn_right    = kb[3];
+wire btn_fire1    = kb[4];
+wire btn_fire2    = kbx[0];
+wire btn_fire3    = kb[5];
+wire btn_fire4    = kbx[1];
+wire btn_coin1    = kb[8];
+wire btn_coin2    = kb[9];
+wire btn_1p_start = kb[6];
+wire btn_2p_start = kb[7];
+wire btn_pause    = kb[12];
 
-// ----- Right analog stick decode (Vanguard secondary fire) -----
-// joystick_r_analog_0[7:0]  = X axis (signed), positive = right
-// joystick_r_analog_0[15:8] = Y axis (signed), positive = down
-// Threshold of ±64/127 (~half deflection) — same as Qix.
-wire [3:0] rstick_dir;        // {U, D, L, R}
+wire [3:0] rstick_dir;
 ctl_stick_dirs #(.MODE(0), .THRESH(7'd64)) rstick(.stick(joystick_r_analog_0), .dir(rstick_dir));
 
-// ----- DPAD directions -----
 wire m_up1    = btn_up    | joystick_0[3];
 wire m_down1  = btn_down  | joystick_0[2];
 wire m_left1  = btn_left  | joystick_0[1];
@@ -209,50 +197,35 @@ wire m_down2  = joystick_1[2];
 wire m_left2  = joystick_1[1];
 wire m_right2 = joystick_1[0];
 
-// ----- Face buttons (ABXY) -----
-// jn: A=joystick[4], B=joystick[5], X=joystick[6], Y=joystick[7]
-//
-// Vanguard convention (matches each button's physical position on the pad):
-//   A = fire RIGHT
-//   B = fire DOWN
-//   X = fire UP
-//   Y = fire LEFT
-wire m_btn1_p1 = btn_fire1 | joystick_0[4];   // A
-wire m_btn2_p1 = btn_fire2 | joystick_0[5];   // B
-wire m_btn3_p1 = btn_fire3 | joystick_0[6];   // X
-wire m_btn4_p1 = btn_fire4 | joystick_0[7];   // Y
+wire m_btn1_p1 = btn_fire1 | joystick_0[4];
+wire m_btn2_p1 = btn_fire2 | joystick_0[5];
+wire m_btn3_p1 = btn_fire3 | joystick_0[6];
+wire m_btn4_p1 = btn_fire4 | joystick_0[7];
 
 wire m_btn1_p2 = joystick_1[4];
 wire m_btn2_p2 = joystick_1[5];
 wire m_btn3_p2 = joystick_1[6];
 wire m_btn4_p2 = joystick_1[7];
 
-
-// ----- Coin / Start / Pause -----
-wire m_coin1  = btn_coin1    | joystick_0[8];   // Select = Coin
+wire m_coin1  = btn_coin1    | joystick_0[8];
 wire m_coin2  = btn_coin2    | joystick_1[8];
-wire m_start1 = btn_1p_start | joystick_0[9];   // Start  = Start 1P
-wire m_start2 = btn_2p_start | joystick_1[9];   // R      = Start 2P
-wire m_pause  = btn_pause    | joystick_0[11];  // L      = Pause
-
+wire m_start1 = btn_1p_start | joystick_0[9];
+wire m_start2 = btn_2p_start | joystick_1[9];
+wire m_pause  = btn_pause    | joystick_0[11];
 
 assign LED_USER = m_coin1;
 
-// DSW: from DIP switch array
 wire [7:0] snk_dsw = sw[0];
 
-// DIPS
 reg [7:0] sw[8];
 always @(posedge clk_sys)
 begin
 	if (ioctl_wr && (ioctl_index==8'd254) && !ioctl_addr[24:3]) sw[ioctl_addr[2:0]] <= ioctl_dout;
 end
 
-// ROM download
 wire rom_download = ioctl_download & (ioctl_index == 8'd0);
 wire reset = (RESET | status[0] | buttons[1] | ioctl_download);
 
-// Game core outputs
 wire [7:0] core_r, core_g, core_b;
 wire       core_hs, core_vs, core_hb, core_vb;
 wire [15:0] core_audio;
@@ -267,7 +240,7 @@ snk6502_dispatcher game_core(
 	.clk_sys    (clk_sys),
 	.reset      (reset),
 	.pause      (pause_cpu),
-	.crt_flip   (status[22]),       // OSD CRT Flip
+	.crt_flip   (status[22]),
 
 	.game_id    (game_id),
 
@@ -294,8 +267,6 @@ snk6502_dispatcher game_core(
 	.ce_pix     (ce_pix)
 );
 
-// DISPLAY
-// Convert 8-bit RGB channels to 9-bit (3-3-3) for arcade_video
 wire [8:0] rgb_in = {core_b[7:5], core_g[7:5], core_r[7:5]};
 
 wire hblank = core_hb;
@@ -303,7 +274,6 @@ wire vblank = core_vb;
 wire hs = core_hs;
 wire vs = core_vs;
 
-// ce_pix: sync rising edge from clk_master into clk_vid domain
 reg ce_pix_r, ce_pix_rr;
 always @(posedge clk_vid) begin ce_pix_r <= ce_pix; ce_pix_rr <= ce_pix_r; end
 wire ce_pix_sync = ce_pix_r & ~ce_pix_rr;
@@ -328,10 +298,6 @@ arcade_video #(256,9,1) arcade_video
 );
 
 assign CLK_VIDEO = clk_vid;
-// Audio HALTS on pause/OSD: the sound generators' state-advance is gated by `pause`
-// inside the core (snk6502_snd music clock/phase/sequencer + snk6502_noise decay),
-// so they FREEZE and resume exactly where they left off — no mute, no drift.
-// See [[Pause must gate every clock domain]].
 assign AUDIO_L = core_audio;
 assign AUDIO_R = core_audio;
 assign AUDIO_S = 1'b1;

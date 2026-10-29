@@ -1,17 +1,7 @@
-//============================================================================
-//
-//  SNK6502 — board top (dispatcher)
+//  SNK6502 dispatcher: shared CPU / sound chip, ROM and RAM pools + the board
 //  Copyright (C) 2026 Rodimus
-//
-//  Pools (CPU / sound chip, ROM, RAM) live here; the board (rtl/boards/snk6502_board.sv) drives them through bus
-//  ports (Projects/Arcade-Konami82_MiSTer/Claude/chip_pool_convention.md). Boards never instantiate their own CPU /
-//  sound chip / ROM / RAM.
-//
-//  One board family so far, every game (game_id = MRA index 1 byte 0; MAME snk/snk6502.cpp):
-//    0 Sasuke vs. Commander   1 Satan of Saturn / Zarzon   2 Vanguard   3 Fantasy   4 Pioneer Balloon   5 Nibbler
-//  Clocks: clk_master = 11.289 MHz (CPU, video, sound), clk_sys = the ROM download clock.
-//
-//============================================================================
+//  game_id: 0 Sasuke vs. Commander, 1 Satan of Saturn / Zarzon, 2 Vanguard, 3 Fantasy, 4 Pioneer Balloon, 5 Nibbler
+//  clk_master = 11.289 MHz (CPU, video, sound), clk_sys = ROM download
 
 module snk6502_dispatcher
 (
@@ -54,7 +44,7 @@ chip_pool_pkg::t65_i_t t65_0_i;
 chip_pool_pkg::t65_o_t t65_0_o;
 
 wire [23:0] t65_0_a24;
-wire        t65_0_sync;                                // opcode fetch (Verilator harness cpu_m1)
+wire        t65_0_sync;
 /* verilator lint_off PINCONNECTEMPTY */
 T65 t65_0
 (
@@ -205,7 +195,7 @@ endfunction
 ram_pool_pkg::pram_i_t [RAM_BLOCKS-1:0] snk_pr_i, pool_i;
 ram_pool_pkg::pram_o_t [RAM_BLOCKS-1:0] pool_o;
 assign pool_i = snk_pr_i;                              // one board family so far
-genvar n;                                              // Quartus 17: no genvar declared in the for header
+genvar n;
 generate
     for (n = 0; n < RAM_BLOCKS; n++) begin : rpool
         dpram_dc #(.widthad_a(ram_aw(n))) ram

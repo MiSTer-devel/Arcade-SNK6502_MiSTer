@@ -1,34 +1,4 @@
-//=============================================================================
-// hd38880_dectab.v
-//
-// HD38880 decode-ROM lookup: raw unpacked frame codes (from hd38880_unpack.v)
-// -> fixed-point synthesis parameters (for parcor_lattice.v).
-//
-// These are the chip's INTERNAL decode tables (amp/pitch/k1..k10 quantiser
-// curves) reverse-engineered from hardware recordings — analogous to a
-// TMS5220's built-in energy/pitch/coefficient ROMs. They are not part of any
-// game ROM dump; there is no physical file to load. Source: hd38880_tables_abs.json
-// (see ../hd38880/README.md section 2 "Quantiser recovery").
-//
-// Fixed-point conventions (per README section 3):
-//   k1..k10 -> signed Q1.9 (10-bit, x512), matches parcor_lattice.v k_in[]
-//   amp     -> unsigned 8-bit (x255, table is already 0.0-1.0 normalized),
-//              matches parcor_lattice.v amp_in
-//   pitch   -> unsigned 8-bit, period in samples (16-98), matches pitch_in;
-//              code 0 always means "unvoiced" and bypasses the table, exactly
-//              as hd38880_decode.py's params() does (`if not F['pitch']: per=0`)
-//
-// k1 (7-bit raw code, amp/k2 likewise) is looked up via the top bits of the
-// raw code directly against the recovered 16-entry table (bin index = top 4
-// bits, dropping the low 3/1 bits) rather than the golden Python decoder's
-// np.interp — a direct table lookup, no interpolation logic. This matches the
-// package's own resource estimate ("64+64+16+16+64 entries = trivial
-// BRAM/LUTROM") and the package is explicit that the decode curves are
-// approximate/not bit-exact regardless (README section 5 caveats), so the
-// small extra quantisation from skipping interpolation is within that same
-// margin. amp/pitch use the full 6-bit code against the full 64-entry table,
-// so those two are an exact match to the reference tables.
-//=============================================================================
+//  HD38880 decode tables: frame codes -> synthesis parameters (recovered from hardware recordings)
 
 module hd38880_dectab (
     input  wire [5:0]        amp_code,
@@ -58,7 +28,6 @@ module hd38880_dectab (
     output reg  signed [9:0] k10_out
 );
 
-    // amp_table[64]: hd38880_tables_abs.json "amp_table", x255
     reg [7:0] amp_table [0:63];
     initial begin
         amp_table[  0]=8'd0;   amp_table[  1]=8'd39;  amp_table[  2]=8'd40;  amp_table[  3]=8'd41;
@@ -79,8 +48,6 @@ module hd38880_dectab (
         amp_table[ 60]=8'd255; amp_table[ 61]=8'd255; amp_table[ 62]=8'd255; amp_table[ 63]=8'd255;
     end
 
-    // pitch_table_full[64]: hd38880_tables_abs.json "pitch_table_full", samples
-    // (code 0 is special-cased to 0/unvoiced below and never reads this table)
     reg [7:0] pitch_table [0:63];
     initial begin
         pitch_table[  0]=8'd16; pitch_table[  1]=8'd16; pitch_table[  2]=8'd17; pitch_table[  3]=8'd18;
@@ -101,7 +68,6 @@ module hd38880_dectab (
         pitch_table[ 60]=8'd98; pitch_table[ 61]=8'd98; pitch_table[ 62]=8'd98; pitch_table[ 63]=8'd98;
     end
 
-    // k1_bins[16] / k2_bins[16]: x512 (Q1.9)
     reg signed [9:0] k1_table [0:15];
     reg signed [9:0] k2_table [0:15];
     initial begin
@@ -116,7 +82,6 @@ module hd38880_dectab (
         k2_table[12]= 10'sd103; k2_table[13]= 10'sd93;  k2_table[14]=-10'sd31;  k2_table[15]=-10'sd93;
     end
 
-    // k3..k10[8]: x512 (Q1.9), direct 3-bit code index
     reg signed [9:0] k3_table  [0:7];
     reg signed [9:0] k4_table  [0:7];
     reg signed [9:0] k5_table  [0:7];

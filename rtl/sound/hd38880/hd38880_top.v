@@ -1,22 +1,4 @@
-//=============================================================================
-// hd38880_top.v
-//
-// Glue: hd38880_ctrl (x2, Vanguard + Fantasy phrase tables, muxed by
-// game_is_fantasy) -> hd38880_unpack -> hd38880_dectab -> parcor_lattice.
-// One shared unpack/decode/lattice pipeline per README section 4 ("the
-// format is game-independent"); only the phrase-address table differs
-// between games, so only hd38880_ctrl is instanced twice.
-//
-// Owns:
-//   - the external speech-ROM read port (byte-wide, 1-cycle synchronous
-//     read; caller provides the BRAM), base-$4000-subtracted to a 13-bit
-//     local offset
-//   - the 20 ms frame-pacing tick that paces hd38880_unpack -> parcor_lattice
-//     handshake (frame_ack / frame_we)
-//   - cutting cleanly to silence on STOP / natural phrase end (hd38880_unpack
-//     drops into S_DONE with no further frames; without this the lattice
-//     would loop the last frame's parameters forever)
-//=============================================================================
+//  HD38880 speech: command decoders -> unpack -> decode tables -> PARCOR lattice
 
 module hd38880_top #(
     parameter CLK_HZ = 11_289_000   // clk_master, see rtl/snk6502.v
@@ -25,21 +7,16 @@ module hd38880_top #(
     input  wire        reset,
     input  wire        pause,
 
-    // Host (sound CPU) interface — top level gates host_wr to only pulse
-    // while the active game is Vanguard or Fantasy.
     input  wire         host_wr,
     input  wire  [5:0]  host_din,
     input  wire         game_is_fantasy,
 
-    // Speech ROM read port: external BRAM, 1-cycle synchronous read.
-    // Address is already offset so 0 == game address $4000.
     output wire [12:0] rom_addr,
     input  wire [7:0]  rom_data,
 
     output wire signed [14:0] audio_out
 );
 
-    // ---- Command decode: one instance per phrase table, muxed by game -----
     wire        start_vg, stop_vg, phrase_ok_vg;
     wire [19:0] adset_addr_vg, end_addr_vg;
     wire [3:0]  int1_cfg_vg, int2_cfg_vg, syspd_vg, phrase_vg;
@@ -73,7 +50,6 @@ module hd38880_top #(
     wire [3:0]  ctrl_int1      = game_is_fantasy ? int1_cfg_fy   : int1_cfg_vg;
     wire [3:0]  ctrl_int2      = game_is_fantasy ? int2_cfg_fy   : int2_cfg_vg;
 
-    // ---- Bitstream unpacker -------------------------------------------------
     wire        unpack_done;
     wire [19:0] unpack_rom_addr;
     reg         unpack_rom_valid;
@@ -100,15 +76,11 @@ module hd38880_top #(
         .f_k6(f_k6), .f_k7(f_k7), .f_k8(f_k8), .f_k9(f_k9), .f_k10(f_k10)
     );
 
-    // BRAM latency glue: rom_valid is rom_rd delayed one clock (see
-    // hd38880_unpack.v header). Address is base-$4000-subtracted for the
-    // external 8KB BRAM window (see rtl/snk6502.v speech ROM instance).
     always @(posedge clk) unpack_rom_valid <= unpack_rom_rd;
 
     wire [19:0] rom_addr_rel = unpack_rom_addr - 20'h04000;
     assign rom_addr = rom_addr_rel[12:0];
 
-    // ---- Decode ROM (chip-internal tables, not game data) -------------------
     wire [7:0]        dec_amp, dec_pitch;
     wire signed [9:0] dec_k1, dec_k2, dec_k3, dec_k4, dec_k5,
                        dec_k6, dec_k7, dec_k8, dec_k9, dec_k10;
@@ -124,10 +96,6 @@ module hd38880_top #(
         .k9_out(dec_k9), .k10_out(dec_k10)
     );
 
-    // ---- 20 ms frame pacing --------------------------------------------------
-    // hd38880_unpack fills its bit reservoir from ROM far faster than
-    // real-time; frame_ack must be paced at the chip's 20 ms/frame rate so
-    // parcor_lattice's own 160-samples-per-frame interpolation stays in sync.
     localparam integer FRAME_DIV = (CLK_HZ / 1000) * 20;
     reg [23:0] frame_cnt;
     wire       frame_tick = (frame_cnt == FRAME_DIV - 1);
@@ -157,7 +125,6 @@ module hd38880_top #(
             k9_lat <= 10'sd0; k10_lat <= 10'sd0;
         end
         else if (!pause && frame_tick && frame_valid) begin
-            // normal case: advance unpack to the next frame, latch this one
             frame_ack <= 1'b1;
             frame_we  <= 1'b1;
             amp_lat   <= dec_amp;
@@ -167,16 +134,11 @@ module hd38880_top #(
             k9_lat  <= dec_k9;  k10_lat <= dec_k10;
         end
         else if (unpack_done && !done_d) begin
-            // phrase ended (STOP marker or host STOP): force a silence frame
-            // so the lattice doesn't keep looping the last spoken frame.
             frame_we <= 1'b1;
             amp_lat  <= 8'd0;
         end
     end
 
-    // parcor_lattice does NOT settle to zero when a phrase ends: with zero excitation its filter state holds its last
-    // value (measured on Vanguard phrase 2: a constant 1408 peak after unpack_done, -21 dB at the mix level - an
-    // audible hum). The output is held at silence unless a phrase is playing; the real chip emits nothing when stopped.
     reg speaking;
     always @(posedge clk) begin
         if (reset)                          speaking <= 1'b0;
