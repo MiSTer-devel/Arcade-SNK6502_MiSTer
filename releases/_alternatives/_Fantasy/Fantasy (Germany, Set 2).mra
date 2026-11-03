@@ -22,6 +22,7 @@
 
     <buttons names="Fire,-,-,-,Coin,Start 1P,Start 2P,Pause" default="A,Select,Start,R,L"/>
 
+    <!-- Index 0: ROM -->
     <rom index="0" zip="fantasyg2.zip|fantasyu.zip" md5="none">
         <part repeat="0x3000">00</part>
         <part crc="6edca14e" name="ts5.bin"/>
@@ -48,7 +49,7 @@
         <part crc="3a352e1f" name="fs_f_11.bin"/>
     </rom>
 
-    <!-- ROM index 1: game_id = 3 (GID_FANTASY) -->
+    <!-- Index 1: Config -->
     <rom index="1">
         <part>03</part>
     </rom>

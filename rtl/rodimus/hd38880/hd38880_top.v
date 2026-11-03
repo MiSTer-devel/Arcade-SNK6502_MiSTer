@@ -1,7 +1,9 @@
-//  HD38880 speech: command decoders -> unpack -> decode tables -> PARCOR lattice
+//  SPDX-License-Identifier: BSD-3-Clause
+//  Copyright (C) 2026 Rodimus
+//  HD38880 speech engine, written from analysis of the speech data and the SK-6 board (no third-party code).
 
 module hd38880_top #(
-    parameter CLK_HZ = 11_289_000   // clk_master, see rtl/snk6502.v
+    parameter CLK_HZ = 11_289_000
 )(
     input  wire        clk,
     input  wire        reset,

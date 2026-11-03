@@ -24,8 +24,6 @@ module emu
     `include "sys/emu_ports.vh"
 );
 
-///////// Default values for ports not used in this core /////////
-
 assign ADC_BUS  = 'Z;
 assign USER_OUT = '1;
 assign {UART_RTS, UART_TXD, UART_DTR} = 0;
@@ -73,8 +71,6 @@ localparam CONF_STR = {
 	"V,v",`BUILD_DATE
 };
 
-////////////////////   CLOCKS   ///////////////////
-
 wire clk_vid;
 wire clk_master;
 wire pll_locked;
@@ -90,8 +86,6 @@ pll pll
 );
 
 wire clk_sys = clk_vid;
-
-///////////////////////////////////////////////////
 
 wire [31:0] status;
 wire  [1:0] buttons;
@@ -163,8 +157,6 @@ pause #(3,3,3,24) pause (
 	.g(rgb_in[5:3]),
 	.b(rgb_in[8:6])
 );
-
-///////////////////   CONTROLS   ////////////////////
 
 wire [12:0] kb;
 wire  [1:0] kbx;

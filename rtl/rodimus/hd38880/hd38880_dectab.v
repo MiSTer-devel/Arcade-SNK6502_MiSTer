@@ -1,4 +1,7 @@
-//  HD38880 decode tables: frame codes -> synthesis parameters (recovered from hardware recordings)
+//  SPDX-License-Identifier: BSD-3-Clause
+//  Copyright (C) 2026 Rodimus
+//  Amplitude / pitch / k1-k10 decode tables: empirical fits obtained by analysing the HD38880 speech data
+//  (not values read from silicon).
 
 module hd38880_dectab (
     input  wire [5:0]        amp_code,

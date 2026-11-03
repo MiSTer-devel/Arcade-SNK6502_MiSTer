@@ -24,6 +24,7 @@
 
     <buttons names="Fire,-,-,-,Coin,Start 1P,Start 2P,Pause" default="A,Select,Start,R,L"/>
 
+    <!-- Index 0: ROM -->
     <rom index="0" zip="satansatind.zip|satansat.zip" md5="none">
         <part repeat="0x4000">00</part>
         <part crc="7f16f8fe" name="ss01.rom"/>
@@ -50,7 +51,7 @@
         <part crc="580934d2" name="ss13.rom"/>
     </rom>
 
-    <!-- ROM index 1: game_id = 1 (GID_SATANSAT) -->
+    <!-- Index 1: Config -->
     <rom index="1">
         <part>01</part>
     </rom>

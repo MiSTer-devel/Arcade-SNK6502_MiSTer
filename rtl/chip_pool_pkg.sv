@@ -130,7 +130,45 @@ typedef struct packed {
     logic        wr_n;
     logic        ale;
     logic  [7:0] db;                    // address (at ALE) / MOVX write data
+    logic        db_dir;                // 1 = the 8039 drives db (Sega speech board latch timing)
 } mcs48_o_t;
+
+// UPI-41 / 8041 (t48sv_upi41_core, every pin; clocks xtal_i / clk_i stay on the instance). reset_n is active-low
+// (T48 res_active_c = 0). pmem = program store, dmem = 64/128 x 8 data RAM (pool blocks in the dispatcher).
+typedef struct packed {
+    logic        reset_n;
+    logic        xtal_en;
+    logic        en_clk;
+    logic        t0;
+    logic        t1;
+    logic        cs_n;
+    logic        rd_n;
+    logic        wr_n;
+    logic        a0;
+    logic  [7:0] db;
+    logic  [7:0] p1_in;
+    logic  [7:0] p2_in;
+    logic  [7:0] dmem_d;
+    logic  [7:0] pmem_d;
+} upi41_i_t;
+
+typedef struct packed {
+    logic        sync;
+    logic  [7:0] db;
+    logic  [7:0] sts;
+    logic        db_dir;
+    logic  [7:0] p1;
+    logic  [7:0] p2;
+    logic        p1_low_imp;
+    logic        p2l_low_imp;
+    logic        p2h_low_imp;
+    logic        prog_n;
+    logic        xtal3;
+    logic  [7:0] dmem_a;
+    logic        dmem_we;
+    logic  [7:0] dmem_d;
+    logic [10:0] pmem_a;
+} upi41_o_t;
 
 // Z80 (T80pa, Mode 0). Superset of every core's pins: a core without a DMA ties BUSRQ_n high in its dispatcher and leaves
 // busrq_n / busak_n undriven; inte = IFF1 (T80pa REG bit 210: the 8080's INTE pin for an 8080 board). RESET_n is on the bus:
@@ -254,6 +292,7 @@ typedef struct packed {
     logic [15:0] a;
     logic  [7:0] dout;
     logic        rw;                    // 1 = read
+    logic        sync;                  // opcode fetch (T65 Sync pin); every dispatcher drives it (DECO Cassette deco222 decrypt reads it)
 } t65_o_t;
 
 // 8039 with its external bus (T48 t8039_notri_extrom, EA low, program on pmem; T0 low, P2 inputs high): BUS / ALE /
@@ -334,8 +373,164 @@ typedef struct packed {
     logic  [4:0] p2_out;
 } m6803_o_t;
 
-// JT5205-2026-10-24: MSM5205 types for our rtl/sound/msm5205.sv, replaced by jotego's jt5205 (user: fleet-wide).
-// MSM-REVERT-2026-10-25: our msm5205.sv back in the pool (user: jt5205 Moon Patrol rock "thonk" inaudible on HW)
+// HD63701 (jtframe_6801mcu, MODEL "HD63701V"): rom_data comes from the dispatcher's ROM block
+typedef struct packed {
+    logic        rst;
+    logic        cen;
+    logic        cen_tmr;
+    logic        irq;
+    logic        nmi;
+    logic  [7:0] xdin;
+    logic  [7:0] p1_din;
+    logic  [4:0] p2_din;
+    logic  [7:0] p3_din;
+    logic  [7:0] p4_din;
+} hd63701_i_t;
+
+typedef struct packed {
+    logic [15:0] addr;
+    logic  [7:0] dout;
+    logic        wr;
+    logic        x_cs;
+    logic        ba;
+    logic  [7:0] p1_dout;
+    logic  [4:0] p2_dout;
+    logic  [7:0] p3_dout;
+    logic  [7:0] p4_dout;
+} hd63701_o_t;
+
+// Namco CUS30 (jtcus30): b* = main CPU bus, s* = sound CPU bus; snd_l / snd_r are signed
+typedef struct packed {
+    logic        rst;
+    logic        cen;
+    logic        bsel;
+    logic        bcs;
+    logic        brnw;
+    logic  [9:0] baddr;
+    logic  [7:0] bdout;
+    logic        scs;
+    logic        srnw;
+    logic [15:0] saddr;
+    logic  [7:0] sdout;
+} cus30_i_t;
+
+typedef struct packed {
+    logic  [7:0] xdin;
+    logic        sample;
+    logic [12:0] snd_l;
+    logic [12:0] snd_r;
+} cus30_o_t;
+
+// Toshiba TC8830F ADPCM speech (rtl/rodimus/tc8830f): rom_req / rom_addr / rom_data / rom_busy go to the dispatcher's ROM path
+typedef struct packed {
+    logic        reset;
+    logic        pause;
+    logic        p_wr;
+    logic  [3:0] p_data;
+    logic        acl;
+} tc8830f_i_t;
+
+typedef struct packed {
+    logic [15:0] out;
+} tc8830f_o_t;
+
+// RP2A03 (rtl/rodimus/rp2a03): APU + glue around a pooled T65 (its t65_i / t65_o connect to a t65 slot in the dispatcher)
+typedef struct packed {
+    logic        reset;
+    logic        ce;
+    logic        nmi_n;
+    logic  [7:0] ext_din;
+} rp2a03_i_t;
+
+typedef struct packed {
+    logic [15:0] ext_a;
+    logic        ext_rw;
+    logic  [7:0] ext_dout;
+    logic [15:0] aux_a;
+    logic [15:0] aux_b;
+} rp2a03_o_t;
+
+// Williams special chip / blitter (rtl/rodimus/williams_sc): remap_* go to the dispatcher's remap PROM block
+typedef struct packed {
+    logic        rst;
+    logic        run;
+    logic        reg_we;
+    logic  [2:0] reg_a;
+    logic  [7:0] reg_d;
+    logic  [2:0] size_xor;
+    logic [15:0] clip_addr;
+    logic        window;
+    logic        remap_en;
+    logic  [6:0] remap_idx;
+    logic  [7:0] din;
+    logic  [7:0] vram_q;
+} williams_sc_i_t;
+
+typedef struct packed {
+    logic        busy;
+    logic [15:0] a;
+    logic  [7:0] dout;
+    logic        we;
+} williams_sc_o_t;
+
+// Sega 315-5018 opcode decryption (rtl/rodimus/sega_315_5018), combinational
+typedef struct packed {
+    logic  [7:0] src;
+    logic [15:0] addr;
+    logic        m1;
+} sega_315_5018_i_t;
+
+typedef struct packed {
+    logic  [7:0] dout;
+} sega_315_5018_o_t;
+
+// TMS5110 PROM sequencer (rtl/rodimus/tms5110 tmsprom): rom_addr / rom_q go to the dispatcher's speech ROM block
+typedef struct packed {
+    logic        reset;
+    logic        ce_romclk;
+    logic        chip_busy;
+    logic        enable;
+    logic  [2:0] bit_sel;
+    logic        csq0;
+    logic        csq1;
+    logic        prom_wr;
+    logic  [4:0] prom_waddr;
+    logic  [7:0] prom_wdata;
+    logic        m0;
+} tmsprom_i_t;
+
+typedef struct packed {
+    logic        data_bit;
+    logic  [3:0] ctl;
+    logic        pdc;
+} tmsprom_o_t;
+
+// Konami 084 starfield + watchdog (rtl/rodimus/k084, Vic20-Ian)
+typedef struct packed {
+    logic        reset;
+    logic        cen_6m;
+    logic        hblank;
+    logic        vblank;
+    logic        blank;
+    logic        aux_en;
+    logic        stars_en;
+    logic        hff;
+    logic        h8q;
+    logic        v1;
+    logic        v2;
+    logic  [1:0] hpos_hi;
+    logic        wd_kick;
+    logic        bootleg_mode;
+} k084_i_t;
+
+typedef struct packed {
+    logic  [1:0] star_r;
+    logic  [1:0] star_g;
+    logic  [1:0] star_b;
+    logic        star_on;
+    logic        wd_reset;
+} k084_o_t;
+
 typedef struct packed {
     logic        step;
     logic        rst;
@@ -362,7 +557,8 @@ typedef struct packed {
 } jt5205_o_t;
 
 // Z80 / 8085 (T80pa, Mode 0, Phoenix core copy of rtl/cpu/T80: runtime I8080 = 8080 mode, I8085 = opcode 20 is RIM
-// loading RIM_D). Reset = the core reset (not on the bus); BUSRQ_n inactive.
+// loading RIM_D). BUSRQ_n inactive. rst = a board-driven reset pulse: every dispatcher ORs it into the CPU reset
+// (RESET_n = ~(reset | rst)); a board without one ties it 1'b0 (VIC: coin insert resets the CPU).
 typedef struct packed {
     logic        cen_p;
     logic        cen_n;
@@ -373,6 +569,7 @@ typedef struct packed {
     logic        i8085;
     logic  [7:0] rim_d;
     logic  [7:0] di;
+    logic        rst;
 } z80pa85_i_t;
 
 typedef struct packed {
@@ -437,7 +634,7 @@ typedef struct packed {
 } vlm5030_o_t;
 
 // Namco 15XX WSG (8 voices). The registers live in the first 64 bytes of the CPU-shared sound RAM; the chip
-// snoops CPU writes there (MAME namco_15xx_device::sharedram_w). dac_mode picks the board's volume DAC
+// snoops CPU writes there. dac_mode picks the board's volume DAC
 // (0 = Super Pac-Man LS273 + 4066 resistor ladder, 1 = Mappy / Gaplus 99XX).
 typedef struct packed {
     logic        sound_en;      // LS259 SOUND ON
@@ -453,12 +650,12 @@ typedef struct packed {
     logic [15:0] sound;         // signed mono
 } wsg15_o_t;
 
-// Namco 56XX / 58XX / 59XX custom I/O (MB8843, undumped: behavioural per MAME namcoio.cpp), runtime-configured
+// Namco 56XX / 58XX / 59XX custom I/O (MB8843, undumped: behavioural), runtime-configured
 // by kind; CPU side is the 16XX nibble buffer (16 nibbles per chip).
 typedef struct packed {
     logic  [1:0] kind;          // 0 = 56XX, 1 = 58XX, 2 = 59XX
     logic        reset_n;       // LS259 4 RESET
-    logic        run;           // vblank strobe: process the command (MAME customio_run 50 us after vblank)
+    logic        run;   // vblank strobe: process the command
     logic        wr;
     logic  [3:0] addr;
     logic  [3:0] din;
@@ -504,6 +701,7 @@ typedef struct packed {
     logic  [7:0] a;
     logic  [7:0] b;
     logic  [7:0] c;
+    logic  [9:0] sound;                 // jt49 A+B+C mix; cores that don't read it leave it undriven
 } jt49_o_t;
 
 // MCL86 8088 execution unit (mcl86_eu_core, TEST_N inactive). The bus unit (biu_max) stays on each board: its timing
@@ -1237,5 +1435,98 @@ typedef struct packed {
 typedef struct packed {
     logic [15:0] audio;                 // signed
 } sn76477_noise_o_t;
+
+// SP0250 LPC speech (rtl/sound/sp0250/sp0250.sv). ce_3_12m / ce_rom_1_56m = the board's
+// 3.12 MHz and 1.56 MHz enables; reset_n on the bus (the speech board's reset).
+typedef struct packed {
+    logic        reset_n;
+    logic        ce_3_12m;
+    logic        ce_rom_1_56m;
+    logic  [7:0] data_in;
+    logic        wr;
+} sp0250_i_t;
+
+typedef struct packed {
+    logic        drq;
+    logic [13:0] audio;                 // signed
+    logic        audio_valid;
+} sp0250_o_t;
+
+// 8035 through the i8035.v wrapper (bare t48_core, 64-byte RAM; program via the external bus, I_EA = 1).
+// rst_n on the bus: the Sega Universal Sound Board holds it in reset while the host loads its program RAM.
+typedef struct packed {
+    logic        rst_n;
+    logic        ce;
+    logic        int_n;
+    logic        ea;
+    logic        t0;
+    logic        t1;
+    logic  [7:0] db;
+    logic  [7:0] p1;
+    logic  [7:0] p2;
+} i8035_i_t;
+
+typedef struct packed {
+    logic        psen_n;
+    logic        rd_n;
+    logic        wr_n;
+    logic        ale;
+    logic        prog_n;
+    logic        t0;
+    logic  [7:0] db;
+    logic  [7:0] p1;
+    logic  [7:0] p2;
+} i8035_o_t;
+
+// MCL86 8088 as one CPU (rtl/cpu/MCL86/mcl86_cpu.sv: BIU + EU + bus glue): request / acknowledge bus
+typedef struct packed {
+    logic        reset;
+    logic        cpu_clk;               // 8088 pin clock
+    logic        nmi;
+    logic        intr;
+    logic  [7:0] req_rdata;
+    logic        req_ack;               // 1 clk: rdata valid / write taken
+} mcl86_i_t;
+typedef struct packed {
+    logic        req;
+    logic  [2:0] req_type;              // S2-S0 of the cycle
+    logic [19:0] req_addr;
+    logic  [7:0] req_wdata;
+} mcl86_o_t;
+
+// Votrax SC-01 / SC-01A (rtl/sound/sc01, ours); the internal ROM is a dispatcher ROM block
+typedef struct packed {
+    logic        reset;
+    logic        mc;                    // master-clock enable
+    logic        stb;
+    logic  [5:0] phoneme;
+    logic  [1:0] inflection;
+} sc01_i_t;
+typedef struct packed {
+    logic        ar;                    // 1 = ready
+    logic [15:0] audio;                 // signed
+    logic        sample;
+} sc01_o_t;
+
+// Z80 CTC (rtl/rodimus/z80ctc, every port). reset_n is on the bus: MCR's CPU board watchdog resets it with the Z80.
+// wr_stb = 1-clk register write (wsel / wdata); rsel reads dout combinationally; inta / reti = 1-clk strobes
+typedef struct packed {
+    logic        reset_n;
+    logic        ce;
+    logic        wr_stb;
+    logic  [1:0] wsel;
+    logic  [7:0] wdata;
+    logic  [1:0] rsel;
+    logic  [3:0] trg;                   // trigger / clock inputs (level)
+    logic        trg_en;
+    logic        inta;
+    logic        reti;
+} z80ctc_i_t;
+typedef struct packed {
+    logic  [7:0] dout;
+    logic        int_n;
+    logic  [7:0] ack_vector;
+    logic  [3:0] zc_to;                 // ZC/TO pulse per channel
+} z80ctc_o_t;
 
 endpackage

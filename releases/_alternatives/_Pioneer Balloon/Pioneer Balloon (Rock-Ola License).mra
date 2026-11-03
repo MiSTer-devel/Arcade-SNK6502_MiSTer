@@ -22,6 +22,7 @@
 
     <buttons names="Fire,-,-,-,Coin,Start 1P,Start 2P,Pause" default="A,Select,Start,R,L"/>
 
+    <!-- Index 0: ROM -->
     <rom index="0" zip="pballoonr.zip|pballoon.zip" md5="none">
         <part repeat="0x3000">00</part>
         <part crc="dfe2ae05" name="sk7_ic12.bin"/>
@@ -42,7 +43,7 @@
         <part crc="a4c505cd" name="sk7_ic53.bin"/>
     </rom>
 
-    <!-- ROM index 1: game_id = 4 (GID_PBALLOON) -->
+    <!-- Index 1: Config -->
     <rom index="1">
         <part>04</part>
     </rom>

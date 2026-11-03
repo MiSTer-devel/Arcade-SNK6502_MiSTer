@@ -1,20 +1,19 @@
-//  SNK6502 board: Sasuke vs. Commander, Satan of Saturn / Zarzon, Vanguard, Fantasy, Pioneer Balloon, Nibbler
 //  Based on MAME snk6502.cpp, snk6502_v.cpp (Nicola Salmoria, Dan Boris, BSD-3-Clause)
 
 module snk6502_board(
-    input         clk_master,     // 11.289 MHz master clock
+    input         clk_master,
     input         reset,
     input         pause,
-    input         crt_flip,       // OSD CRT Flip: 180 degree mirror of the whole raster
+    input         crt_flip,
     output        ce_pix,
 
-    input  [3:0]  game_id,        // which game variant (see defines below)
+    input  [3:0]  game_id,
 
     input  [7:0]  p1,
     input  [7:0]  p2,
-    input  [3:0]  p1_rstick,      // P1 right stick {U, D, L, R}: Vanguard's second set of fire buttons
+    input  [3:0]  p1_rstick,
     input  [3:0]  sys_ctl,        // {start2, start1, coin2, coin1}
-    input  [7:0]  dsw,            // DIP switches
+    input  [7:0]  dsw,
 
     output [7:0]  rgb_r,
     output [7:0]  rgb_g,
@@ -38,17 +37,17 @@ module snk6502_board(
     output chip_pool_pkg::sn76477_noise_i_t sn76477_noise_1_i,
     input  chip_pool_pkg::sn76477_noise_o_t sn76477_noise_1_o,
 
-    output [15:0] rom0_a,         // program ROM
+    output [15:0] rom0_a,
     input  [7:0]  rom0_d,
-    output [11:0] rom1_a,         // gfx plane 0
+    output [11:0] rom1_a,
     input  [7:0]  rom1_d,
-    output [11:0] rom2_a,         // gfx plane 1
+    output [11:0] rom2_a,
     input  [7:0]  rom2_d,
-    output [5:0]  rom3_a,         // colour PROMs
+    output [5:0]  rom3_a,
     input  [7:0]  rom3_d,
-    output [12:0] rom4_a,         // sound ROM
+    output [12:0] rom4_a,
     input  [7:0]  rom4_d,
-    output [12:0] rom5_a,         // speech ROM
+    output [12:0] rom5_a,
     input  [7:0]  rom5_d,
 
     output ram_pool_pkg::pram_i_t [6:0] pr_i,
@@ -522,6 +521,7 @@ wire fantasy_nibbler_swap = (game_id == GID_FANTASY) || (game_id == GID_NIBBLER)
 wire pballoon_bg_swap = (game_id == GID_PBALLOON);
 
 wire sasuke_swap = (game_id == GID_SASUKE);
+// named wire: Quartus 17 Verilog-2001 rejects a bit-select on an expression
 wire [3:0] bg_fine_tap  = crt_flip ? (4'd8 - {1'b0, scroll_x[2:0]}) : (4'd15 - {1'b0, scroll_x[2:0]});
 wire       bg_p0_bit    = bg_p0_win[bg_fine_tap];
 wire       bg_p1_bit    = bg_p1_win[bg_fine_tap];
@@ -559,6 +559,7 @@ reg display_active_raw;
 always @(posedge clk_master)
     display_active_raw <= crtc_de & ~crtc_hblank & ~crtc_vblank;
 
+// ENVELOPE_DELAY = the pixel path's depth in ce_pix cycles: change both together
 localparam integer ENVELOPE_DELAY_MAX = 16;
 
 reg [ENVELOPE_DELAY_MAX-1:0] de_pipe;

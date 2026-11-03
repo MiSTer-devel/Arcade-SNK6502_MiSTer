@@ -1,20 +1,19 @@
-//  SN76477 noise leg as wired on Vanguard / Fantasy (VCO, SLF, one-shot off; mixer = noise)
-//  Configuration from MAME snk6502_a.cpp (Nicola Salmoria, Dan Boris, BSD-3-Clause)
+// Based on MAME snk6502_a.cpp (Nicola Salmoria, Dan Boris, BSD-3-Clause)
 
 module sn76477_noise #(
     parameter integer CLK_HZ    = 11_289_000,
     parameter integer NOISE_HZ  = 3082,   // 3082 = 470k leg, 97493 = 10k leg
-    parameter         FILTER_EN = 1'b1,   // 0 when the filter cap is absent (C=0)
+    parameter         FILTER_EN = 1'b1,
     parameter integer AMPLITUDE = 6000
 )(
     input  wire        clk,
     input  wire        reset,
     input  wire        pause,
-    input  wire        gate,      // ENABLE, active high (level, not edge)
+    input  wire        gate,
     output reg signed [15:0] audio_out
 );
 
-    localparam integer NOISE_DIV = CLK_HZ / NOISE_HZ;   // 3663 @3082Hz, 115 @97493Hz
+    localparam integer NOISE_DIV = CLK_HZ / NOISE_HZ;
     reg [15:0] ndiv;
     wire       noise_ce = (ndiv == NOISE_DIV[15:0] - 16'd1);
 
@@ -32,7 +31,7 @@ module sn76477_noise #(
     end
     wire noise_bit = lfsr[16];
 
-    localparam integer FILT_DIV = CLK_HZ / 48000;       // 235
+    localparam integer FILT_DIV = CLK_HZ / 48000;
     reg [11:0] fdiv;
     wire       filt_ce = (fdiv == FILT_DIV[11:0] - 12'd1);
     always @(posedge clk) begin

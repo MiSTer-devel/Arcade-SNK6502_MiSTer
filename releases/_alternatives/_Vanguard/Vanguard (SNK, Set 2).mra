@@ -22,6 +22,7 @@
 
     <buttons names="Fire Right,Fire Down,Fire Up,Fire Left,Coin,Start 1P,Start 2P,Pause" default="A,B,X,Y,Select,Start,R,L"/>
 
+    <!-- Index 0: ROM -->
     <rom index="0" zip="vanguarda.zip|vanguard.zip" md5="none">
         <part repeat="0x4000">00</part>
         <part crc="6a29e354" name="1.rom1"/>
@@ -48,7 +49,7 @@
         <part crc="c36df041" name="sk6_ic11.bin"/>
     </rom>
 
-    <!-- ROM index 1: game_id = 2 (GID_VANGUARD) -->
+    <!-- Index 1: Config -->
     <rom index="1">
         <part>02</part>
     </rom>

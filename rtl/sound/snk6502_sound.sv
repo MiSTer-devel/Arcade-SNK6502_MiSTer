@@ -1,34 +1,30 @@
-//  SNK6502 custom tone generator
 //  Based on MAME snk6502_a.cpp (Nicola Salmoria, Dan Boris, BSD-3-Clause)
 
 module snk6502_snd (
-    input  wire                 clk,          // 11.289 MHz master clock
+    input  wire                 clk,
     input  wire                 reset,
-    input  wire                 pause,        // halt sound state on pause/OSD (freeze + resume, no drift)
-    input  wire        [7:0]    sound_port0,  // CPU write data for port 0
-    input  wire        [7:0]    sound_port1,  // CPU write data for port 1
-    input  wire        [7:0]    sound_port2,  // CPU write data for port 2
-    input  wire        [7:0]    sound_port3,  // CPU write data for port 3 (new)
-    input  wire                 wr0,          // one-cycle write strobe for port 0
-    input  wire                 wr1,          // one-cycle write strobe for port 1
-    input  wire                 wr2,          // one-cycle write strobe for port 2
-    input  wire                 wr3,          // one-cycle write strobe for port 3
+    input  wire                 pause,
+    input  wire        [7:0]    sound_port0,
+    input  wire        [7:0]    sound_port1,
+    input  wire        [7:0]    sound_port2,
+    input  wire        [7:0]    sound_port3,
+    input  wire                 wr0,
+    input  wire                 wr1,
+    input  wire                 wr2,
+    input  wire                 wr3,
     input  wire                 game_is_vanguard,
     input  wire                 game_is_sasuke,
     input  wire                 game_is_satansat,
     input  wire                 game_is_pballoon,
-    input  wire                 ss_wr0,       // $B000 write strobe (1 clk)
-    input  wire                 ss_wr1,       // $B001 write strobe (1 clk)
-    input  wire        [7:0]    snd_rom_data, // data from external sound ROM (combinatorial or 1-cycle registered)
-    output reg         [12:0]   snd_rom_addr, // address to sound ROM
-    output reg  signed [15:0]   audio_out,    // 16-bit signed PCM output (sum of 3 channels)
+    input  wire                 ss_wr0,
+    input  wire                 ss_wr1,
+    input  wire        [7:0]    snd_rom_data,
+    output reg         [12:0]   snd_rom_addr,
+    output reg  signed [15:0]   audio_out,
     output wire                 music0_playing
 );
 
-    //////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////
-
-    localparam MUSIC_DIV   = 19'd273999; // master/≈274000 ≈ 41.2 Hz (matches fantasy 41.6 Hz closely)
+    localparam MUSIC_DIV   = 19'd273999;
     localparam FRAC_BITS   = 16;
     localparam FRAC_ONE    = 32'd65536;
 
@@ -363,8 +359,6 @@ module snk6502_snd (
         phase_inc_lut_satansat[255] = 32'd451791;
     end
 
-    //////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////
     always @(posedge clk) begin
         if (reset) begin
             music_cnt <= 0;
@@ -377,8 +371,6 @@ module snk6502_snd (
         end
     end
 
-    //////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////
     always @(posedge clk) begin
         if (reset) begin
             rom_sel       <= 0;
@@ -431,8 +423,6 @@ module snk6502_snd (
         endcase
     end
 
-    //////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////
     always @(posedge clk) begin
         if (reset) begin
             ch_phase[0] <= 0; ch_phase[1] <= 0; ch_phase[2] <= 0;
@@ -445,8 +435,6 @@ module snk6502_snd (
         end
     end
 
-    //////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////
     always @(posedge clk) begin
         if (reset) begin
             wf_busy  <= 1'b0;
@@ -497,8 +485,6 @@ module snk6502_snd (
         end
     end
 
-    //////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////
     always @(posedge clk) begin
         if (reset) begin
             ch_mute[0]   <= 1'b1;
@@ -534,6 +520,7 @@ module snk6502_snd (
                         if (ch_mute[0]) ch_offset[0] <= 0;
                         ch_mute[0]   <= 1'b0;
                     end
+                // Vanguard has no port 3 and never unmutes ch2: leave it muted from reset
                 end else begin
                     ch_base[0]   <= {sound_port0[2:0], 8'h00};
                     if (sound_port0[3] == 1'b0 || ch_mute[0]) ch_offset[0] <= 0;
@@ -606,8 +593,6 @@ module snk6502_snd (
         end
     end
 
-    //////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////
     always @(posedge clk) begin
         if (reset) begin
             audio_out <= 0;

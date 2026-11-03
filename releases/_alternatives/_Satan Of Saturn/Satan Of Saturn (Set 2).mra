@@ -24,6 +24,7 @@
 
     <buttons names="Fire,-,-,-,Coin,Start 1P,Start 2P,Pause" default="A,Select,Start,R,L"/>
 
+    <!-- Index 0: ROM -->
     <rom index="0" zip="satansata.zip|satansat.zip" md5="none">
         <part repeat="0x4000">00</part>
         <part crc="549dd13a" name="ic7.bin"/>
@@ -49,7 +50,7 @@
         <part crc="580934d2" name="ic54.bin"/>
     </rom>
 
-    <!-- ROM index 1: game_id = 1 (GID_SATANSAT) -->
+    <!-- Index 1: Config -->
     <rom index="1">
         <part>01</part>
     </rom>

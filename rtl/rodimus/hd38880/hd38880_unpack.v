@@ -1,3 +1,6 @@
+//  SPDX-License-Identifier: BSD-3-Clause
+//  Copyright (C) 2026 Rodimus
+//  HD38880 speech engine, written from analysis of the speech data and the SK-6 board (no third-party code).
 //  HD38880 speech-ROM frame unpacker
 //
 //  Frame format (LSB-first within each byte, fields LSB-first). Normal frame = 49 bits:
@@ -12,23 +15,23 @@ module hd38880_unpack (
     input  wire        clk,
     input  wire        rst,
 
-    input  wire        start,          // pulse: begin phrase at start_addr
-    input  wire [19:0] start_addr,     // byte address from ADSET
+    input  wire        start,
+    input  wire [19:0] start_addr,
     input  wire [19:0] end_addr,
-    input  wire        abort,          // pulse: host STOP command
-    output reg         done,           // stop marker reached (or abort)
+    input  wire        abort,
+    output reg         done,
 
     output reg  [19:0] rom_addr,
     input  wire [7:0]  rom_data,
     output reg         rom_rd,
-    input  wire        rom_valid,      // rom_data valid, 1 clk after rom_rd
+    input  wire        rom_valid,
 
     output reg         frame_valid,
-    input  wire        frame_ack,      // consumer takes the frame (per 20 ms)
-    output reg         f_silent,       // amp code == 0
-    output reg  [5:0]  f_amp,          // raw 6-bit amplitude code
+    input  wire        frame_ack,
+    output reg         f_silent,
+    output reg  [5:0]  f_amp,
     output reg  [5:0]  f_pitch,        // raw 6-bit pitch code (0 = unvoiced)
-    output reg  [6:0]  f_k1,           // raw coefficient codes
+    output reg  [6:0]  f_k1,
     output reg  [4:0]  f_k2,
     output reg  [2:0]  f_k3, f_k4, f_k5, f_k6, f_k7, f_k8, f_k9, f_k10
 );
@@ -56,6 +59,7 @@ module hd38880_unpack (
             resv     <= 64'd0;
             frame_valid <= 1'b0;
             state    <= S_FILL;
+            // a fetch in flight returns a byte of the old address stream: discard it
             fetch_skip <= rom_rd;
         end
         else if (abort) begin
@@ -131,4 +135,3 @@ module hd38880_unpack (
 
 endmodule
 
-// Synthesis behaviours validated against hardware recordings:

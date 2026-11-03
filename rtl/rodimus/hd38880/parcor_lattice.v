@@ -1,4 +1,6 @@
-//  PARCOR lattice speech synthesizer (Hitachi HD38880 architecture)
+//  SPDX-License-Identifier: BSD-3-Clause
+//  Copyright (C) 2026 Rodimus
+//  HD38880 speech engine, written from analysis of the speech data and the SK-6 board (no third-party code).
 //  After Hitachi Hyoron Vol.63 No.12 (Dec 1981), "Speech Synthesis LSIs"
 
 module parcor_lattice #(
@@ -8,23 +10,22 @@ module parcor_lattice #(
 )(
     input  wire               clk,
     input  wire               rst,
-    input  wire               pause,        // freeze sample-rate divider on MiSTer OSD halt
+    input  wire               pause,
 
-    // synthesis path. Reassembled into a local k_in[] array immediately below
     input  wire signed [9:0]  k1_in, k2_in, k3_in, k4_in, k5_in,
                                k6_in, k7_in, k8_in, k9_in, k10_in,
-    input  wire        [7:0]  amp_in,       // linear amplitude (post decode ROM)
+    input  wire        [7:0]  amp_in,
     input  wire        [7:0]  pitch_in,     // pitch period in samples; 0 = unvoiced
-    input  wire               frame_we,     // 1-clk pulse: latch new frame
+    input  wire               frame_we,
 
     input  wire               tri_src,      // 1 = triangular, 0 = impulse
     input  wire               loss_en,      // 1 = apply alpha to reflected wave
     input  wire               ten_stage,    // 1 = 10 stages, 0 = 8 stages
-    input  wire        [7:0]  ext_pitch,    // EXTP A/B derived pitch offset
+    input  wire        [7:0]  ext_pitch,
     input  wire               ext_pitch_en,
 
     output reg  signed [14:0] audio_out,
-    output reg                audio_stb     // 1-clk pulse at each new sample
+    output reg                audio_stb
 );
 
     wire signed [9:0] k_in [0:9];
@@ -32,9 +33,9 @@ module parcor_lattice #(
     assign k_in[4]=k5_in; assign k_in[5]=k6_in; assign k_in[6]=k7_in; assign k_in[7]=k8_in;
     assign k_in[8]=k9_in; assign k_in[9]=k10_in;
 
-    localparam integer DIV = CLK_HZ / SAMPLE_HZ;   // clocks per audio sample
+    localparam integer DIV = CLK_HZ / SAMPLE_HZ;
 
-    localparam integer SPF     = (SAMPLE_HZ * 20) / 1000;  // samples per 20 ms frame
+    localparam integer SPF     = (SAMPLE_HZ * 20) / 1000;
     localparam integer SUBSTEP = SPF / 8;
 
     reg signed [9:0] k_tgt  [0:9];
@@ -66,6 +67,7 @@ module parcor_lattice #(
 
     wire [7:0] tri_len = 8'd8;
 
+    // named wire: Quartus 17 Verilog-2001 rejects a bit-select on an expression
     wire [10:0] amp_ugain = {3'd0, amp_cur} + {5'd0, amp_cur[7:2]} + {7'd0, amp_cur[7:4]};
 
     always @(posedge clk) begin

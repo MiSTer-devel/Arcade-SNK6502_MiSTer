@@ -1,5 +1,7 @@
-//  Hitachi HD38880 speech: host command decoder
-//  Command protocol from MAME snk6502_a.cpp (Nicola Salmoria, Dan Boris, BSD-3-Clause)
+//  SPDX-License-Identifier: BSD-3-Clause
+//  Copyright (C) 2026 Rodimus
+//  Command protocol from MAME src/mame/snk/snk6502_a.cpp (license:BSD-3-Clause,
+//  copyright-holders: Nicola Salmoria, Dan Boris)
 
 module hd38880_ctrl #(
     parameter GAME = 0            // 0 = Vanguard, 1 = Fantasy (phrase table)
@@ -7,19 +9,19 @@ module hd38880_ctrl #(
     input  wire        clk,
     input  wire        rst,
 
-    input  wire        wr,        // write strobe, 1 clk wide
+    input  wire        wr,
     input  wire [5:0]  din,       // {CMV, CTP, SYBS4..SYBS1}
 
-    output reg         start,     // 1-clk pulse: begin phrase playback
-    output reg         stop,      // 1-clk pulse: halt playback
-    output reg  [3:0]  phrase,    // phrase index 0..15 (valid with start)
-    output reg         phrase_ok, // ADSET address matched the table
-    output reg  [19:0] adset_addr,// raw 20-bit speech-ROM start address
-    output reg  [19:0] end_addr,  // valid together with start
+    output reg         start,
+    output reg         stop,
+    output reg  [3:0]  phrase,
+    output reg         phrase_ok,
+    output reg  [19:0] adset_addr,
+    output reg  [19:0] end_addr,
 
     output reg  [3:0]  int1_cfg,  // [3] tri(1)/impulse(0) excitation
     output reg  [3:0]  int2_cfg,  // [3] 48(1)/96(0) bits per frame
-    output reg  [3:0]  syspd      // speed = (syspd+1)/10
+    output reg  [3:0]  syspd
 );
 
     localparam [3:0] CMD_ADSET  = 4'd2,

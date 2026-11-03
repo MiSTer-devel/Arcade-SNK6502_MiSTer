@@ -1,11 +1,10 @@
-//  SNK6502 bomb / explosion one-shot noise
 //  Based on MAME snk6502_a.cpp (Nicola Salmoria, Dan Boris, BSD-3-Clause)
 
 module snk6502_noise (
-    input  wire        clk,       // 11.289 MHz master clock
+    input  wire        clk,
     input  wire        reset,
-    input  wire        pause,     // halt in-flight one-shot on pause/OSD
-    input  wire        trigger,   // rising edge fires one-shot
+    input  wire        pause,
+    input  wire        trigger,
     output reg  signed [15:0] audio_out
 );
 

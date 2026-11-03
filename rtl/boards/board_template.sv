@@ -7,7 +7,7 @@
 //  (chip_pool_pkg buses), the ROM blocks rom0-rom5 (program, gfx plane 0 / 1, colour PROMs, sound, speech) and the
 //  seven board RAM pool blocks (ram_pool_pkg; map in the dispatcher's "Shared RAM pool" section: 0 work 1K, 1 FG
 //  tilemap 1K, 2 BG tilemap 1K, 3 / 4 colour RAM FG / BG copy 1K, 5 / 6 character RAM plane 0 / 1 2K).
-//  To add the board: copy this file to rtl/boards/<board>_board.sv (the port list below is snk6502_board's, the only
+//  To add the board: copy this file to rtl/boards/<board>/<board>_board.sv (the port list below is snk6502_board's, the only
 //  board so far), add it to files.qip + verilator/Makefile SRC, instance it in the dispatcher, put its *_i buses on
 //  the variant muxes (pool_i, every chip bus; today a plain assign: one board family) and tie the blocks it doesn't use
 //  to '0. A RAM bigger than its block = grow the block, never a private dpram_dc. A RAM / chip that truly can't pool =
