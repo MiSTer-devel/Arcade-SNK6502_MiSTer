@@ -734,15 +734,18 @@ assign dsnd_0_i.src = {ds_caps, 40'd0, snd_p0_latch};
 wire signed [15:0] fx_audio = dsnd_0_o.out;
 
 wire signed [17:0] speech_audio_w18 = {{3{speech_audio[14]}}, speech_audio};
-wire signed [17:0] speech_audio_amp = game_vg ? (speech_audio_w18 <<< 2)
-                                              : (speech_audio_w18 <<< 1);
+wire signed [17:0] speech_audio_amp = game_vg ? (speech_audio_w18 <<< 1)
+                                              : speech_audio_w18;
 wire signed [15:0] speech_audio_scaled =
       (speech_audio_amp >  18'sd32767) ? 16'sd32767
     : (speech_audio_amp < -18'sd32768) ? 16'sh8000
     : speech_audio_amp[15:0];
 
 wire signed [20:0] mus_v = $signed(snd_audio) * $signed({1'b0, vol_music});
-wire signed [20:0] sp_v  = speech_audio_scaled * $signed({1'b0, vol_speech});
+wire signed [15:0] speech_audio_filt;
+snk6502_voice_lpf voice_lpf (.clk(clk_master), .reset(reset), .din(speech_audio_scaled), .dout(speech_audio_filt));
+
+wire signed [20:0] sp_v  = speech_audio_filt * $signed({1'b0, vol_speech});
 wire signed [20:0] fx_v  = fx_audio * $signed({1'b0, vol_sfx});
 wire signed [20:0] audio_mix3 = (mus_v >>> 3) + (sp_v >>> 3) + (fx_v >>> 3);
 wire audio_mix3_ovf = ~(&audio_mix3[20:15] | ~|audio_mix3[20:15]);

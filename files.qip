@@ -11,6 +11,7 @@ set_global_assignment -name SYSTEMVERILOG_FILE Arcade-SNK6502.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/snk6502_dispatcher.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/boards/snk6502/snk6502_board.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/boards/snk6502/snk6502_sound.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/boards/snk6502/snk6502_voice_lpf.sv
 set_global_assignment -name VERILOG_FILE rtl/rodimus/hd38880/hd38880_ctrl.v
 set_global_assignment -name VERILOG_FILE rtl/rodimus/hd38880/hd38880_unpack.v
 set_global_assignment -name VERILOG_FILE rtl/rodimus/hd38880/hd38880_dectab.v

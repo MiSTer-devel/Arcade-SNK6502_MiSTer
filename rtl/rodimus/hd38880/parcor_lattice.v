@@ -2,6 +2,8 @@
 //  Copyright (C) 2026 Rodimus
 //  HD38880 speech engine, written from analysis of the speech data and the SK-6 board (no third-party code).
 //  After Hitachi Hyoron Vol.63 No.12 (Dec 1981), "Speech Synthesis LSIs"
+//  Excitation levels, amp / pitch interpolation and the output de-emphasis + hold-droop compensation: measured
+//  against real-board recordings (2026-11-03).
 
 module parcor_lattice #(
     parameter CLK_HZ      = 12_000_000,
@@ -43,6 +45,16 @@ module parcor_lattice #(
     reg signed [10:0] k_step [0:9];
     reg        [7:0] amp_tgt, amp_cur;
     reg        [7:0] pitch_tgt, pitch_cur;
+    reg signed [8:0] amp_step, pitch_step;
+
+    function signed [10:0] step8;
+        input signed [10:0] d;
+        reg   signed [10:0] m;
+        begin
+            m = -d;
+            step8 = d[10] ? -(m >>> 3) : (d >>> 3);
+        end
+    endfunction
 
     reg [9:0] samp_cnt;
     reg [3:0] interp_idx;
@@ -68,7 +80,7 @@ module parcor_lattice #(
     wire [7:0] tri_len = 8'd8;
 
     // named wire: Quartus 17 Verilog-2001 rejects a bit-select on an expression
-    wire [10:0] amp_ugain = {3'd0, amp_cur} + {5'd0, amp_cur[7:2]} + {7'd0, amp_cur[7:4]};
+    wire [10:0] amp_ugain = {3'd0, amp_cur} - {6'd0, amp_cur[7:3]} - {9'd0, amp_cur[7:6]};
 
     always @(posedge clk) begin
         if (rst) begin
@@ -85,14 +97,9 @@ module parcor_lattice #(
                 if (pitch_cnt >= pitch_eff - 1) pitch_cnt <= 8'd0;
                 else                            pitch_cnt <= pitch_cnt + 8'd1;
 
-                begin
-                    excite <= (pitch_cnt == 8'd0)
-                        ? ($signed({4'd0, amp_cur, 3'd0}) - $signed({6'd0, amp_cur, 1'd0}))
-                          + (lfsr[0] ?  $signed({11'd0, amp_cur[7:4]})
-                                     : -$signed({11'd0, amp_cur[7:4]}))
-                        : (lfsr[0] ?  $signed({11'd0, amp_cur[7:4]})
-                                   : -$signed({11'd0, amp_cur[7:4]}));
-                end
+                excite <= (pitch_cnt == 8'd0)
+                    ? ($signed({4'd0, amp_cur, 3'd0}) - $signed({6'd0, amp_cur, 1'd0}))
+                    : 15'sd0;
             end
         end
     end
@@ -116,8 +123,30 @@ module parcor_lattice #(
 
     wire [4:0] top_stage = ten_stage ? 5'd10 : 5'd8;
 
+    reg  signed [14:0] lat_out;
+    reg                lat_stb;
+    reg  signed [15:0] de_y1, de_y2;
+    wire signed [16:0] de_sum = $signed({{2{lat_out[14]}}, lat_out}) + $signed({{2{de_y1[15]}}, de_y1[15:1]});
+    wire signed [15:0] de_new = (de_sum > 17'sd32767) ? 16'sd32767 : (de_sum < -17'sd32768) ? -16'sd32768 : de_sum[15:0];
+    wire signed [20:0] fir    = ($signed({{5{de_y1[15]}}, de_y1}) <<< 4) + ($signed({{5{de_y1[15]}}, de_y1}) <<< 1)
+                              - $signed({{5{de_new[15]}}, de_new}) - $signed({{5{de_y2[15]}}, de_y2});
+    wire signed [16:0] fir_q  = fir[20:4];
+    wire signed [14:0] fir_sat = (fir_q > 17'sd16383) ? 15'sd16383 : (fir_q < -17'sd16384) ? -15'sd16384 : fir_q[14:0];
+
     always @(posedge clk) begin
         audio_stb <= 1'b0;
+        if (rst) begin
+            de_y1 <= 16'sd0; de_y2 <= 16'sd0; audio_out <= 15'sd0;
+        end else if (lat_stb) begin
+            de_y1     <= de_new;
+            de_y2     <= de_y1;
+            audio_out <= fir_sat;
+            audio_stb <= 1'b1;
+        end
+    end
+
+    always @(posedge clk) begin
+        lat_stb <= 1'b0;
 
         if (rst) begin
             busy  <= 1'b0;
@@ -128,7 +157,7 @@ module parcor_lattice #(
                 b_delay[n] <= 15'sd0;
                 b_new[n]   <= 15'sd0;
             end
-            audio_out <= 15'sd0;
+            lat_out <= 15'sd0;
         end
         else if (sample_tick) begin
             f_val <= excite;
@@ -146,8 +175,8 @@ module parcor_lattice #(
                 b_new[stage-1] <= b_loss + (p_kf >>> 9);
                 if (stage == 5'd1) begin
                     busy      <= 1'b0;
-                    audio_out <= f_val;
-                    audio_stb <= 1'b1;
+                    lat_out   <= f_val;
+                    lat_stb   <= 1'b1;
                     b_delay[0] <= f_val;
                     b_delay[1] <= b_loss + (p_kf >>> 9);
                     for (n = 2; n < 10; n = n + 1)
@@ -170,6 +199,8 @@ module parcor_lattice #(
             amp_tgt    <= 8'd0;
             pitch_cur  <= 8'd0;
             pitch_tgt  <= 8'd0;
+            amp_step   <= 9'sd0;
+            pitch_step <= 9'sd0;
             for (n = 0; n < 10; n = n + 1) begin
                 k_cur[n]  <= 10'sd0;
                 k_tgt[n]  <= 10'sd0;
@@ -178,22 +209,26 @@ module parcor_lattice #(
         end
         else begin
             if (frame_we) begin
-                amp_cur   <= amp_in;
                 amp_tgt   <= amp_in;
-                pitch_cur <= pitch_in;
                 pitch_tgt <= pitch_in;
 
                 for (n = 0; n < 10; n = n + 1) k_tgt[n] <= k_in[n];
 
                 if ((pitch_in == 8'd0) != (pitch_cur == 8'd0)) begin
+                    amp_cur    <= amp_in;
+                    pitch_cur  <= pitch_in;
+                    amp_step   <= 9'sd0;
+                    pitch_step <= 9'sd0;
                     for (n = 0; n < 10; n = n + 1) begin
                         k_cur[n]  <= k_in[n];
                         k_step[n] <= 11'sd0;
                     end
                 end
                 else begin
+                    amp_step   <= step8($signed({3'd0, amp_in}) - $signed({3'd0, amp_cur}));
+                    pitch_step <= step8($signed({3'd0, pitch_in}) - $signed({3'd0, pitch_cur}));
                     for (n = 0; n < 10; n = n + 1)
-                        k_step[n] <= (k_in[n] - k_cur[n]) >>> 3;
+                        k_step[n] <= step8(k_in[n] - k_cur[n]);
                 end
 
                 samp_cnt   <= 10'd0;
@@ -204,10 +239,14 @@ module parcor_lattice #(
                 if (samp_cnt % SUBSTEP == 0 && interp_idx < 4'd8) begin
                     if (interp_idx == 4'd7) begin
                         for (n = 0; n < 10; n = n + 1) k_cur[n] <= k_tgt[n];
+                        amp_cur   <= amp_tgt;
+                        pitch_cur <= pitch_tgt;
                     end
                     else begin
                         for (n = 0; n < 10; n = n + 1)
                             k_cur[n] <= k_cur[n] + k_step[n];
+                        amp_cur   <= amp_cur + amp_step[7:0];
+                        pitch_cur <= pitch_cur + pitch_step[7:0];
                     end
                     interp_idx <= interp_idx + 4'd1;
                 end

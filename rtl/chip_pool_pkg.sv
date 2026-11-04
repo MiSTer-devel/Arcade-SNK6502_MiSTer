@@ -1516,6 +1516,35 @@ typedef struct packed {
     logic  [7:0] req_wdata;
 } mcl86_o_t;
 
+// Intel 8088 (x86sv, rtl/x86sv_fleet.sv x86sv_i8088): max-mode bus, one CPU clock per ce, 8288 command strobes
+typedef struct packed {
+    logic        reset;                 // >= 4 ce
+    logic        ce;                    // one 8088 clock
+    logic        ready;                 // READY: low in T3 / Tw inserts a wait state
+    logic        intr;
+    logic        nmi;                   // rising edge
+    logic        test_n;                // WAIT input
+    logic  [7:0] din;                   // read data / INTA type, taken in the T3 / Tw with ready high
+} i8088_i_t;
+typedef struct packed {
+    logic [19:0] addr;                  // address of the current bus cycle (ALE latch), valid T1-T4
+    logic  [2:0] cyc;                   // S2-S0 of the current bus cycle, valid T1-T4
+    logic        ale;
+    logic  [2:0] s;                     // S2-S0 pins (8288 timing; 111 passive)
+    logic  [1:0] seg;                   // S4-S3
+    logic  [7:0] dout;                  // write data, valid T2-T4
+    logic        mrdc_n;                // 8288 commands, active low, T2-T3-Tw
+    logic        amwc_n;
+    logic        mwtc_n;
+    logic        iorc_n;
+    logic        aiowc_n;
+    logic        iowc_n;
+    logic        inta_n;
+    logic  [1:0] qs;                    // QS1-QS0
+    logic        lock_n;
+    logic [19:0] ad;                    // AD19-AD0 as driven this clock (trace / debug)
+} i8088_o_t;
+
 // Votrax SC-01 / SC-01A (rtl/sound/sc01, ours); the internal ROM is a dispatcher ROM block
 typedef struct packed {
     logic        reset;

@@ -1,7 +1,7 @@
 //  SPDX-License-Identifier: BSD-3-Clause
 //  Copyright (C) 2026 Rodimus
 //  Amplitude / pitch / k1-k10 decode tables: empirical fits obtained by analysing the HD38880 speech data
-//  (not values read from silicon).
+//  (not values read from silicon). k3-k10: quantile-matched to LPC of real-board recordings; k1 / k2 moved toward +-1.
 
 module hd38880_dectab (
     input  wire [5:0]        amp_code,
@@ -74,15 +74,15 @@ module hd38880_dectab (
     reg signed [9:0] k1_table [0:15];
     reg signed [9:0] k2_table [0:15];
     initial begin
-        k1_table[ 0]=-10'sd103; k1_table[ 1]=-10'sd145; k1_table[ 2]=-10'sd155; k1_table[ 3]=-10'sd155;
-        k1_table[ 4]=-10'sd197; k1_table[ 5]=-10'sd259; k1_table[ 6]=-10'sd290; k1_table[ 7]=-10'sd321;
-        k1_table[ 8]=-10'sd362; k1_table[ 9]=-10'sd393; k1_table[10]=-10'sd424; k1_table[11]=-10'sd435;
-        k1_table[12]=-10'sd455; k1_table[13]=-10'sd466; k1_table[14]=-10'sd476; k1_table[15]=-10'sd476;
+        k1_table[ 0]=-10'sd246; k1_table[ 1]=-10'sd273; k1_table[ 2]=-10'sd280; k1_table[ 3]=-10'sd280;
+        k1_table[ 4]=-10'sd307; k1_table[ 5]=-10'sd348; k1_table[ 6]=-10'sd368; k1_table[ 7]=-10'sd388;
+        k1_table[ 8]=-10'sd414; k1_table[ 9]=-10'sd435; k1_table[10]=-10'sd455; k1_table[11]=-10'sd462;
+        k1_table[12]=-10'sd475; k1_table[13]=-10'sd482; k1_table[14]=-10'sd489; k1_table[15]=-10'sd489;
 
-        k2_table[ 0]= 10'sd352; k2_table[ 1]= 10'sd352; k2_table[ 2]= 10'sd352; k2_table[ 3]= 10'sd352;
-        k2_table[ 4]= 10'sd341; k2_table[ 5]= 10'sd341; k2_table[ 6]= 10'sd331; k2_table[ 7]= 10'sd331;
-        k2_table[ 8]= 10'sd310; k2_table[ 9]= 10'sd259; k2_table[10]= 10'sd217; k2_table[11]= 10'sd197;
-        k2_table[12]= 10'sd103; k2_table[13]= 10'sd93;  k2_table[14]=-10'sd31;  k2_table[15]=-10'sd93;
+        k2_table[ 0]= 10'sd408; k2_table[ 1]= 10'sd408; k2_table[ 2]= 10'sd408; k2_table[ 3]= 10'sd408;
+        k2_table[ 4]= 10'sd401; k2_table[ 5]= 10'sd401; k2_table[ 6]= 10'sd394; k2_table[ 7]= 10'sd394;
+        k2_table[ 8]= 10'sd381; k2_table[ 9]= 10'sd348; k2_table[10]= 10'sd320; k2_table[11]= 10'sd307;
+        k2_table[12]= 10'sd246; k2_table[13]= 10'sd240;  k2_table[14]=-10'sd199;  k2_table[15]=-10'sd240;
     end
 
     reg signed [9:0] k3_table  [0:7];
@@ -94,29 +94,29 @@ module hd38880_dectab (
     reg signed [9:0] k9_table  [0:7];
     reg signed [9:0] k10_table [0:7];
     initial begin
-        k3_table[0]= 10'sd83;  k3_table[1]= 10'sd72;  k3_table[2]= 10'sd21;  k3_table[3]= 10'sd10;
-        k3_table[4]= 10'sd0;   k3_table[5]=-10'sd62;  k3_table[6]=-10'sd124; k3_table[7]=-10'sd124;
+        k3_table[0]= 10'sd260;  k3_table[1]= 10'sd156;  k3_table[2]= 10'sd51;  k3_table[3]=-10'sd28;
+        k3_table[4]=-10'sd85;   k3_table[5]=-10'sd135;  k3_table[6]=-10'sd203; k3_table[7]=-10'sd295;
 
-        k4_table[0]= 10'sd217; k4_table[1]= 10'sd217; k4_table[2]= 10'sd145; k4_table[3]= 10'sd114;
-        k4_table[4]= 10'sd114; k4_table[5]= 10'sd103; k4_table[6]= 10'sd103; k4_table[7]= 10'sd103;
+        k4_table[0]= 10'sd389; k4_table[1]= 10'sd320; k4_table[2]= 10'sd220; k4_table[3]= 10'sd149;
+        k4_table[4]= 10'sd98; k4_table[5]= 10'sd53; k4_table[6]= 10'sd1; k4_table[7]=-10'sd59;
 
-        k5_table[0]= 10'sd145; k5_table[1]= 10'sd93;  k5_table[2]= 10'sd72;  k5_table[3]= 10'sd21;
-        k5_table[4]=-10'sd52;  k5_table[5]=-10'sd52;  k5_table[6]=-10'sd114; k5_table[7]=-10'sd166;
+        k5_table[0]= 10'sd177; k5_table[1]= 10'sd101;  k5_table[2]= 10'sd38;  k5_table[3]=-10'sd3;
+        k5_table[4]=-10'sd59;  k5_table[5]=-10'sd118;  k5_table[6]=-10'sd175; k5_table[7]=-10'sd211;
 
-        k6_table[0]= 10'sd207; k6_table[1]= 10'sd176; k6_table[2]= 10'sd135; k6_table[3]= 10'sd135;
-        k6_table[4]= 10'sd114; k6_table[5]= 10'sd93;  k6_table[6]= 10'sd93;  k6_table[7]= 10'sd93;
+        k6_table[0]= 10'sd285; k6_table[1]= 10'sd246; k6_table[2]= 10'sd217; k6_table[3]= 10'sd180;
+        k6_table[4]= 10'sd134; k6_table[5]= 10'sd78;  k6_table[6]= 10'sd12;  k6_table[7]=-10'sd67;
 
-        k7_table[0]= 10'sd135; k7_table[1]= 10'sd62;  k7_table[2]= 10'sd52;  k7_table[3]= 10'sd31;
-        k7_table[4]= 10'sd31;  k7_table[5]= 10'sd10;  k7_table[6]= 10'sd10;  k7_table[7]=-10'sd10;
+        k7_table[0]= 10'sd160; k7_table[1]= 10'sd100;  k7_table[2]= 10'sd52;  k7_table[3]= 10'sd4;
+        k7_table[4]=-10'sd47;  k7_table[5]=-10'sd103;  k7_table[6]=-10'sd158;  k7_table[7]=-10'sd204;
 
-        k8_table[0]= 10'sd155; k8_table[1]= 10'sd145; k8_table[2]= 10'sd124; k8_table[3]= 10'sd103;
-        k8_table[4]= 10'sd72;  k8_table[5]= 10'sd72;  k8_table[6]= 10'sd72;  k8_table[7]= 10'sd52;
+        k8_table[0]= 10'sd300; k8_table[1]= 10'sd219; k8_table[2]= 10'sd167; k8_table[3]= 10'sd115;
+        k8_table[4]= 10'sd64;  k8_table[5]= 10'sd18;  k8_table[6]=-10'sd31;  k8_table[7]=-10'sd98;
 
-        k9_table[0]= 10'sd93;  k9_table[1]= 10'sd93;  k9_table[2]= 10'sd72;  k9_table[3]= 10'sd52;
-        k9_table[4]= 10'sd52;  k9_table[5]= 10'sd21;  k9_table[6]= 10'sd21;  k9_table[7]= 10'sd21;
+        k9_table[0]= 10'sd209;  k9_table[1]= 10'sd123;  k9_table[2]= 10'sd77;  k9_table[3]= 10'sd39;
+        k9_table[4]= 10'sd3;  k9_table[5]=-10'sd24;  k9_table[6]=-10'sd46;  k9_table[7]=-10'sd91;
 
-        k10_table[0]=10'sd135; k10_table[1]=10'sd135; k10_table[2]=10'sd83;  k10_table[3]=10'sd72;
-        k10_table[4]=10'sd52;  k10_table[5]=10'sd41;  k10_table[6]=10'sd21;  k10_table[7]=10'sd21;
+        k10_table[0]= 10'sd327; k10_table[1]= 10'sd261; k10_table[2]= 10'sd181;  k10_table[3]= 10'sd134;
+        k10_table[4]= 10'sd94;  k10_table[5]= 10'sd52;  k10_table[6]= 10'sd20;  k10_table[7]=-10'sd21;
     end
 
     always @* begin
