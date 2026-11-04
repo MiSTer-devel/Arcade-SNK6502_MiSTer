@@ -3,7 +3,7 @@
 //  Copyright (C) 2026 Rodimus
 //
 //  Boards never instantiate a CPU, sound chip, ROM store or board RAM. They live ONCE in the dispatcher
-//  rtl/snk6502_dispatcher.sv: 6502 t65_0, CRTC mc6845_0, speech hd38880_0, noise legs sn76477_noise_0 / _1
+//  rtl/snk6502_dispatcher.sv: 6502 t65_0, CRTC mc6845_0, speech hd38880_0, discrete sound engine dsnd_0
 //  (chip_pool_pkg buses), the ROM blocks rom0-rom5 (program, gfx plane 0 / 1, colour PROMs, sound, speech) and the
 //  seven board RAM pool blocks (ram_pool_pkg; map in the dispatcher's "Shared RAM pool" section: 0 work 1K, 1 FG
 //  tilemap 1K, 2 BG tilemap 1K, 3 / 4 colour RAM FG / BG copy 1K, 5 / 6 character RAM plane 0 / 1 2K).
@@ -31,6 +31,12 @@ module board_template
     input  [3:0]  p1_rstick,      // P1 right stick {U, D, L, R}: Vanguard's second set of fire buttons
     input  [3:0]  sys_ctl,        // {start2, start1, coin2, coin1}
     input  [7:0]  dsw,            // DIP switches
+    input  [3:0]  vol_music,      // OSD Game Audio: 8 = unity, 0 = off, 15 = loudest
+    input  [3:0]  vol_sfx,
+    input  [3:0]  vol_speech,
+    input  [15:0] ds_caps,        // dsnd source bytes 7:6 (Game Audio caps)
+    input  [3:0]  h_adj,          // OSD H / V Position (CRT): signed sync offset, pixels / lines
+    input  [3:0]  v_adj,
 
     // Video output
     output [7:0]  rgb_r,
@@ -44,6 +50,11 @@ module board_template
     output [15:0] audio,
     output        flip_screen,
 
+    input  [15:0] hs_address,     // hiscore: work RAM port B (clk_sys)
+    input  [7:0]  hs_data_in,
+    output [7:0]  hs_data_out,
+    input         hs_write,
+
     // Shared CPU / sound chip pool
     output chip_pool_pkg::t65_i_t           t65_0_i,
     input  chip_pool_pkg::t65_o_t           t65_0_o,
@@ -51,10 +62,8 @@ module board_template
     input  chip_pool_pkg::mc6845_o_t        mc6845_0_o,
     output chip_pool_pkg::hd38880_i_t       hd38880_0_i,
     input  chip_pool_pkg::hd38880_o_t       hd38880_0_o,
-    output chip_pool_pkg::sn76477_noise_i_t sn76477_noise_0_i,
-    input  chip_pool_pkg::sn76477_noise_o_t sn76477_noise_0_o,
-    output chip_pool_pkg::sn76477_noise_i_t sn76477_noise_1_i,
-    input  chip_pool_pkg::sn76477_noise_o_t sn76477_noise_1_o,
+    output chip_pool_pkg::dsnd_i_t          dsnd_0_i,
+    input  chip_pool_pkg::dsnd_o_t          dsnd_0_o,
 
     // Shared ROM blocks (read port, one clock to data)
     output [15:0] rom0_a,         // program ROM

@@ -584,6 +584,28 @@ typedef struct packed {
     logic        sod;                   // 8085 SID / SOD: SOD latched by SIM (opcode 30)
 } z80pa85_o_t;
 
+// 8080 (t80sv_T8080se: 8080 bus with SYNC / DBIN / WR_n / INTE). reset_n is on the bus: the Space Invaders 8080 board's
+// watchdog resets its CPU. hold drives T8080se HOLD (passed to the core as BUSRQ_n): the 8080 boards tie it 0.
+typedef struct packed {
+    logic        reset_n;
+    logic        clken;
+    logic        ready;
+    logic        hold;
+    logic        intr;                  // INT
+    logic  [7:0] di;
+} t8080se_i_t;
+
+typedef struct packed {
+    logic [15:0] a;
+    logic  [7:0] dout;
+    logic        wr_n;
+    logic        sync;
+    logic        dbin;
+    logic        inte;
+    logic        vait;
+    logic        hlda;
+} t8080se_o_t;
+
 // TMS36XX family (rtl/sound/tms36xx.sv: MM6221AA tunes, TMS3615 / TMS3617 notes); parameters per instance
 typedef struct packed {
     logic        tune_we;
@@ -1528,5 +1550,42 @@ typedef struct packed {
     logic  [7:0] ack_vector;
     logic  [3:0] zc_to;                 // ZC/TO pulse per channel
 } z80ctc_o_t;
+
+// Intel 8255 PPI (rtl/rodimus/i8255, every pin; TRI_PA / TRI_PB / TRI_PC set in the dispatcher). reset is on the bus.
+// wr = one clock per write; rd = read cycle (level)
+typedef struct packed {
+    logic        reset;
+    logic        cs;
+    logic        rd;
+    logic        wr;
+    logic  [1:0] a;
+    logic  [7:0] din;
+    logic  [7:0] pa_in;
+    logic  [7:0] pb_in;
+    logic  [7:0] pc_in;
+    logic        stb_a_n;
+    logic        ack_a_n;
+    logic        pc2_n;
+} i8255_i_t;
+typedef struct packed {
+    logic  [7:0] dout;
+    logic  [7:0] pa_out;
+    logic  [7:0] pb_out;
+    logic  [7:0] pc_out;
+} i8255_o_t;
+
+// MM54104 Digitalker (rtl/rodimus/digitalker). reset is on the bus; the 1 MHz stream tick (ce) and the speech ROM
+// (rom_a / rom_d, a dispatcher ROM block) connect in the dispatcher. cs / cms / wr as the pins (cs = 1 deselected)
+typedef struct packed {
+    logic        reset;
+    logic  [7:0] data;
+    logic        cs;
+    logic        cms;
+    logic        wr;
+} digitalker_i_t;
+typedef struct packed {
+    logic        intr;                  // 1 = idle
+    logic [15:0] sample;                // signed
+} digitalker_o_t;
 
 endpackage

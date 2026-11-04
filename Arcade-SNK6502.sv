@@ -44,29 +44,45 @@ assign LED_DISK = '0;
 assign LED_POWER = '0;
 assign BUTTONS = '0;
 
-wire [1:0] ar = status[20:19];
+wire [127:0] status;
+reg snd_prog_on = 1'b0;
+wire [1:0] ar = status[9:8];
 
-assign VIDEO_ARX = (!ar) ? (status[2] ? 8'd4 : 8'd3) : (ar - 1'd1);
-assign VIDEO_ARY = (!ar) ? (status[2] ? 8'd3 : 8'd4) : 12'd0;
+assign VIDEO_ARX = (!ar) ? (status[12] ? 8'd4 : 8'd3) : (ar - 1'd1);
+assign VIDEO_ARY = (!ar) ? (status[12] ? 8'd3 : 8'd4) : 12'd0;
 
 `include "build_id.v"
 localparam CONF_STR = {
 	"SNK6502;;",
 	"P1,Video Options;",
-	"H0P1OJK,Aspect Ratio,Original,Full Screen,[ARC1],[ARC2];",
-	"H0P1O2,Orientation,Vert,Horz;",
-	"P1OB,HDMI Flip,Off,On;",
-	"P1OM,CRT Flip,Off,On;",
-	"P1O35,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
+	"P1O89,Aspect Ratio,Original,Full screen,[ARC1],[ARC2];",
+	"P1OC,Orientation,Vert,Horz;",
+	"P1OM,Flip Screen,Off,On;",
+	"P1O[40:37],H Position (CRT),0,+1,+2,+3,+4,+5,+6,+7,-8,-7,-6,-5,-4,-3,-2,-1;",
+	"P1O[44:41],V Position (CRT),0,+1,+2,+3,+4,+5,+6,+7,-8,-7,-6,-5,-4,-3,-2,-1;",
+	"P1OGI,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
+	"-;",
+	"P3,Pause Options;",
+	"P3OJ,Pause when OSD is open,On,Off;",
+	"P3OK,Dim video after 10s,On,Off;",
+	"-;",
+	"P4,High Score Options;",
+	"P4OL,Autosave Hiscores,Off,On;",
+	"-;",
+	"P5,Game Audio;",
+	"P5O[118:115],Music Volume,Default,+1,+2,+3,+4,+5,+6,+7,Off,-7,-6,-5,-4,-3,-2,-1;",
+	"P5O[122:119],Effects Volume,Default,+1,+2,+3,+4,+5,+6,+7,Off,-7,-6,-5,-4,-3,-2,-1;",
+	"P5O[126:123],Speech Volume,Default,+1,+2,+3,+4,+5,+6,+7,Off,-7,-6,-5,-4,-3,-2,-1;",
+	"H2P5-;",
+	"H2P5O[106:104],Timing Caps,Factory,-10%,-20%,-30%,+10%,+20%,+30%;",
+	"H2P5O[109:107],Filter Caps,Factory,-10%,-20%,-30%,+10%,+20%,+30%;",
+	"H2P5O[112:110],Oscillator Caps,Factory,-10%,-20%,-30%,+10%,+20%,+30%;",
+	"H2P5O[114:113],Aged Caps,Off,Light,Heavy;",
 	"-;",
 	"DIP;",
 	"-;",
-	"P2,Pause Options;",
-	"P2OP,Pause when OSD is open,On,Off;",
-	"P2OQ,Dim video after 10s,On,Off;",
-	"-;",
 	"R0,Reset;",
-	"J1,Button 1,Button 2,Button 3,Button 4,Coin,Start 1P,Start 2P,Pause;",
+	"J1,Button 1,Button 2,Button 3,Button 4,Coin,Start 1P,Start 2P,Pause,Button 5,Button 6;",
 	"jn,A,B,X,Y,Select,Start,R,L;",
 	"V,v",`BUILD_DATE
 };
@@ -87,7 +103,6 @@ pll pll
 
 wire clk_sys = clk_vid;
 
-wire [31:0] status;
 wire  [1:0] buttons;
 wire        forced_scandoubler;
 wire        video_rotated;
@@ -116,7 +131,7 @@ hps_io #(.CONF_STR(CONF_STR)) hps_io
 
 	.buttons(buttons),
 	.status(status),
-	.status_menumask({direct_video}),
+	.status_menumask({~snd_prog_on, 1'b0, direct_video}),
 
 	.forced_scandoubler(forced_scandoubler),
 	.video_rotated(video_rotated),
@@ -138,21 +153,31 @@ hps_io #(.CONF_STR(CONF_STR)) hps_io
 	.ps2_key(ps2_key)
 );
 
-assign ioctl_upload_req = 1'b0;
-assign ioctl_din        = 8'd0;
+wire [15:0] hs_address;
+wire  [7:0] hs_data_in;
+wire  [7:0] hs_data_out;
+wire        hs_write_enable;
+wire        hs_access_read;
+wire        hs_access_write;
+wire        hs_pause;
+wire        hs_configured;
 
 reg [3:0] game_id;
 always @(posedge clk_sys)
 	if (ioctl_wr && ioctl_index == 8'd1 && ioctl_addr == 25'd0)
 		game_id <= ioctl_dout[3:0];
 
+always @(posedge clk_sys)
+	if (ioctl_wr && ioctl_index == 8'd1) snd_prog_on <= 1'b0;
+	else if (ioctl_wr && ioctl_index == 8'd5) snd_prog_on <= 1'b1;
+
 wire        pause_cpu;
 wire [8:0]  rgb_out;
 pause #(3,3,3,24) pause (
 	.*,
 	.user_button(m_pause),
-	.pause_request(1'b0),
-	.options(~status[26:25]),
+	.pause_request(hs_pause),
+	.options(~status[20:19]),
 	.r(rgb_in[2:0]),
 	.g(rgb_in[5:3]),
 	.b(rgb_in[8:6])
@@ -207,9 +232,9 @@ wire m_pause  = btn_pause    | joystick_0[11];
 
 assign LED_USER = m_coin1;
 
+reg [7:0] sw[8];
 wire [7:0] snk_dsw = sw[0];
 
-reg [7:0] sw[8];
 always @(posedge clk_sys)
 begin
 	if (ioctl_wr && (ioctl_index==8'd254) && !ioctl_addr[24:3]) sw[ioctl_addr[2:0]] <= ioctl_dout;
@@ -245,6 +270,19 @@ snk6502_dispatcher game_core(
 	.dn_addr    (ioctl_addr[16:0]),
 	.dn_data    (ioctl_dout),
 	.dn_wr      (ioctl_wr & rom_download),
+	.snd_prog_wr(ioctl_wr & ioctl_download & (ioctl_index == 8'd5)),
+	.snd_prog_on(snd_prog_on),
+	.vol_music  (status[118:115] ^ 4'd8),
+	.vol_sfx    (status[122:119] ^ 4'd8),
+	.vol_speech (status[126:123] ^ 4'd8),
+	.ds_caps    ({3'd0, status[114:110], 2'd0, status[109:104]}),
+	.h_adj      (status[40:37]),
+	.v_adj      (status[44:41]),
+
+	.hs_address (hs_address),
+	.hs_data_in (hs_data_in),
+	.hs_data_out(hs_data_out),
+	.hs_write   (hs_write_enable),
 
 	.rgb_r      (core_r),
 	.rgb_g      (core_g),
@@ -270,9 +308,9 @@ reg ce_pix_r, ce_pix_rr;
 always @(posedge clk_vid) begin ce_pix_r <= ce_pix; ce_pix_rr <= ce_pix_r; end
 wire ce_pix_sync = ce_pix_r & ~ce_pix_rr;
 
-wire no_rotate = status[2] | direct_video;
+wire no_rotate = status[12] | direct_video;
 wire rotate_ccw = 0;
-wire flip = status[11];
+wire flip = 1'b0;
 
 screen_rotate screen_rotate (.*);
 
@@ -286,12 +324,33 @@ arcade_video #(256,9,1) arcade_video
 	.VBlank(vblank),
 	.HSync(hs),
 	.VSync(vs),
-	.fx(status[5:3])
+	.fx(status[18:16])
 );
 
 assign CLK_VIDEO = clk_vid;
 assign AUDIO_L = core_audio;
 assign AUDIO_R = core_audio;
 assign AUDIO_S = 1'b1;
+
+hiscore #(
+	.HS_ADDRESSWIDTH(16),
+	.CFG_ADDRESSWIDTH(4),
+	.CFG_LENGTHWIDTH(2)
+) hi (
+	.*,
+	.clk(clk_sys),
+	.paused(pause_cpu),
+	.autosave(status[21]),
+	.ram_address(hs_address),
+	.data_from_ram(hs_data_out),
+	.data_to_ram(hs_data_in),
+	.data_from_hps(ioctl_dout),
+	.data_to_hps(ioctl_din),
+	.ram_write(hs_write_enable),
+	.ram_intent_read(hs_access_read),
+	.ram_intent_write(hs_access_write),
+	.pause_cpu(hs_pause),
+	.configured(hs_configured)
+);
 
 endmodule

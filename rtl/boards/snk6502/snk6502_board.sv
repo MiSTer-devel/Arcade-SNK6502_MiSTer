@@ -14,6 +14,12 @@ module snk6502_board(
     input  [3:0]  p1_rstick,
     input  [3:0]  sys_ctl,        // {start2, start1, coin2, coin1}
     input  [7:0]  dsw,
+    input  [3:0]  vol_music,      // OSD Game Audio: 8 = unity, 0 = off, 15 = loudest
+    input  [3:0]  vol_sfx,
+    input  [3:0]  vol_speech,
+    input  [15:0] ds_caps,        // dsnd source bytes 7:6 (Game Audio caps)
+    input  [3:0]  h_adj,          // OSD H / V Position (CRT): signed sync offset, pixels / lines
+    input  [3:0]  v_adj,
 
     output [7:0]  rgb_r,
     output [7:0]  rgb_g,
@@ -26,16 +32,19 @@ module snk6502_board(
     output [15:0] audio,
     output        flip_screen,
 
+    input  [15:0] hs_address,     // hiscore: work RAM port B (clk_sys)
+    input  [7:0]  hs_data_in,
+    output [7:0]  hs_data_out,
+    input         hs_write,
+
     output chip_pool_pkg::t65_i_t           t65_0_i,
     input  chip_pool_pkg::t65_o_t           t65_0_o,
     output chip_pool_pkg::mc6845_i_t        mc6845_0_i,
     input  chip_pool_pkg::mc6845_o_t        mc6845_0_o,
     output chip_pool_pkg::hd38880_i_t       hd38880_0_i,
     input  chip_pool_pkg::hd38880_o_t       hd38880_0_o,
-    output chip_pool_pkg::sn76477_noise_i_t sn76477_noise_0_i,
-    input  chip_pool_pkg::sn76477_noise_o_t sn76477_noise_0_o,
-    output chip_pool_pkg::sn76477_noise_i_t sn76477_noise_1_i,
-    input  chip_pool_pkg::sn76477_noise_o_t sn76477_noise_1_o,
+    output chip_pool_pkg::dsnd_i_t          dsnd_0_i,
+    input  chip_pool_pkg::dsnd_o_t          dsnd_0_o,
 
     output [15:0] rom0_a,
     input  [7:0]  rom0_d,
@@ -195,7 +204,9 @@ wire ram_cs = (cpu_addr[15:10] == 6'b000000);
 wire [7:0] ram_dout;
 wire ram_wr = ram_cs & ~cpu_rw_n & cpu_clken;
 
-assign pr_i[0] = '{a_addr: {5'd0, cpu_addr[9:0]}, a_d: cpu_dout, a_we: ram_wr, b_addr: 15'd0, b_d: 8'd0, b_we: 1'b0};
+assign pr_i[0] = '{a_addr: {5'd0, cpu_addr[9:0]}, a_d: cpu_dout, a_we: ram_wr,
+                   b_addr: {5'd0, hs_address[9:0]}, b_d: hs_data_in, b_we: hs_write};
+assign hs_data_out = pr_o[0].b_q;
 assign ram_dout = pr_o[0].a_q;
 
 wire vram2_cs = (cpu_addr[15:10] == 6'b000001);
@@ -595,8 +606,33 @@ assign cpu_din =
     in2_cs      ? in2 :
     rom_dout;
 
-assign hsync  = hsync_pipe[env_idx];
-assign vsync  = vsync_pipe[env_idx];
+wire hs0 = hsync_pipe[env_idx];
+wire vs0 = vsync_pipe[env_idx];
+wire hb0 = hblank_pipe[env_idx];
+wire vb0 = vblank_pipe[env_idx];
+reg        hs0_d, vs0_d, hb0_d;
+reg  [8:0] hcnt, hs_beg, hs_len, vcnt, vs_beg, vs_len;
+reg        hs_gen, vs_gen;
+wire signed [9:0] hs_s = $signed({1'b0, hs_beg}) + $signed({{6{h_adj[3]}}, h_adj});
+wire signed [9:0] vs_s = $signed({1'b0, vs_beg}) + $signed({{6{v_adj[3]}}, v_adj});
+wire [8:0] hs_at = (hs_s < 10'sd1) ? 9'd1 : hs_s[8:0];
+wire [8:0] vs_at = (vs_s < 10'sd1) ? 9'd1 : vs_s[8:0];
+always @(posedge clk_master) begin
+    if (ce_pix) begin
+        hs0_d <= hs0; vs0_d <= vs0; hb0_d <= hb0;
+        hcnt  <= (hb0 & ~hb0_d) ? 9'd0 : hcnt + 9'd1;
+        if (hb0 & ~hb0_d) vcnt <= vb0 ? vcnt + 9'd1 : 9'd0;
+        if (hs0 & ~hs0_d) hs_beg <= hcnt;
+        if (~hs0 & hs0_d) hs_len <= hcnt - hs_beg;
+        if (vs0 & ~vs0_d) vs_beg <= vcnt;
+        if (~vs0 & vs0_d) vs_len <= vcnt - vs_beg;
+        hs_gen <= (hcnt + 9'd1 - hs_at) < hs_len;
+        vs_gen <= (vcnt - vs_at) < vs_len;
+    end
+end
+
+assign hsync  = (h_adj == 4'd0) ? hs0 : hs_gen;
+assign vsync  = (v_adj == 4'd0) ? vs0 : vs_gen;
 assign hblank = hblank_pipe[env_idx];
 assign vblank = vblank_pipe[env_idx];
 
@@ -687,44 +723,15 @@ snk6502_snd sound(
     .music0_playing(music0_playing)
 );
 
-reg bomb_enable;
-always @(posedge clk_master or posedge reset)
-    if (reset)
-        bomb_enable <= 0;
-    else if (snd_wr0)
-        bomb_enable <= cpu_dout[7];
-
 reg [7:0] snd_p0_latch;
 always @(posedge clk_master or posedge reset)
     if (reset)        snd_p0_latch <= 8'h00;
     else if (snd_wr0) snd_p0_latch <= cpu_dout;
 
 wire game_vg = (game_id == GID_VANGUARD);
-wire game_fy = (game_id == GID_FANTASY);
-
-wire shot_a_gate  = game_vg & snd_p0_latch[5];
-wire shot_b_gate  = game_vg & snd_p0_latch[6];
-wire fy_bomb_gate = game_fy & snd_p0_latch[7];
-
-wire bomb_trigger = bomb_enable & ~game_fy;
-
-wire signed [15:0] sn_lo_audio;
-assign sn76477_noise_0_i = '{gate: shot_a_gate | fy_bomb_gate};
-assign sn_lo_audio        = sn76477_noise_0_o.audio;
-
-wire signed [15:0] sn_hi_audio;
-assign sn76477_noise_1_i = '{gate: shot_b_gate};
-assign sn_hi_audio        = sn76477_noise_1_o.audio;
-
-wire signed [15:0] noise_audio;
-
-snk6502_noise noise_gen(
-    .clk      (clk_master),
-    .reset    (reset),
-    .pause    (pause),
-    .trigger  (bomb_trigger),
-    .audio_out(noise_audio)
-);
+// sound-effect boards run on dsnd_0 (program = MRA index 5): source byte 0 = the port-0 latch
+assign dsnd_0_i.src = {ds_caps, 40'd0, snd_p0_latch};
+wire signed [15:0] fx_audio = dsnd_0_o.out;
 
 wire signed [17:0] speech_audio_w18 = {{3{speech_audio[14]}}, speech_audio};
 wire signed [17:0] speech_audio_amp = game_vg ? (speech_audio_w18 <<< 2)
@@ -734,15 +741,13 @@ wire signed [15:0] speech_audio_scaled =
     : (speech_audio_amp < -18'sd32768) ? 16'sh8000
     : speech_audio_amp[15:0];
 
-wire signed [15:0] noise_mix = game_vg ? (noise_audio >>> 1) : noise_audio;
-wire signed [15:0] sn_lo_mix = game_vg ? (sn_lo_audio >>> 1) : sn_lo_audio;
-wire signed [15:0] sn_hi_mix = game_vg ? (sn_hi_audio >>> 1) : sn_hi_audio;
-wire signed [19:0] audio_mix3 = $signed(snd_audio) + $signed(noise_mix)
-                              + $signed(speech_audio_scaled)
-                              + $signed(sn_lo_mix) + $signed(sn_hi_mix);
-wire audio_mix3_ovf = ~(&audio_mix3[19:15] | ~|audio_mix3[19:15]);
+wire signed [20:0] mus_v = $signed(snd_audio) * $signed({1'b0, vol_music});
+wire signed [20:0] sp_v  = speech_audio_scaled * $signed({1'b0, vol_speech});
+wire signed [20:0] fx_v  = fx_audio * $signed({1'b0, vol_sfx});
+wire signed [20:0] audio_mix3 = (mus_v >>> 3) + (sp_v >>> 3) + (fx_v >>> 3);
+wire audio_mix3_ovf = ~(&audio_mix3[20:15] | ~|audio_mix3[20:15]);
 assign audio = audio_mix3_ovf ?
-               (audio_mix3[19] ? 16'sh8000 : 16'sh7FFF) :
+               (audio_mix3[20] ? 16'sh8000 : 16'sh7FFF) :
                audio_mix3[15:0];
 
 endmodule

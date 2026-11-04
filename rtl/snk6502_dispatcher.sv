@@ -16,10 +16,23 @@ module snk6502_dispatcher
     input  logic  [3:0] p1_rstick,      // {U, D, L, R}
     input  logic  [3:0] sys_ctl,        // {start2, start1, coin2, coin1}
     input  logic  [7:0] dsw,
+    input  logic  [3:0] vol_music,      // OSD Game Audio: 8 = unity, 0 = off, 15 = loudest
+    input  logic  [3:0] vol_sfx,
+    input  logic  [3:0] vol_speech,
+    input  logic [15:0] ds_caps,        // dsnd source bytes 7:6 (Game Audio caps)
+    input  logic  [3:0] h_adj,          // OSD H / V Position (CRT)
+    input  logic  [3:0] v_adj,
 
     input  logic [16:0] dn_addr,
     input  logic  [7:0] dn_data,
     input  logic        dn_wr,
+    input  logic        snd_prog_wr,    // MRA index 5 byte (dn_addr / dn_data), clk_sys
+    input  logic        snd_prog_on,    // an index-5 program is loaded for this game
+
+    input  logic [15:0] hs_address,     // hiscore (clk_sys): work RAM block 0, port B
+    input  logic  [7:0] hs_data_in,
+    output logic  [7:0] hs_data_out,
+    input  logic        hs_write,
 
     output logic  [7:0] rgb_r,
     output logic  [7:0] rgb_g,
@@ -91,23 +104,19 @@ hd38880_top #(.CLK_HZ(11_289_000)) hd38880_0
 assign hd38880_0_o.rom_addr = hd38880_0_rom_addr;
 assign hd38880_0_o.audio    = hd38880_0_audio;
 
-chip_pool_pkg::sn76477_noise_i_t sn76477_noise_0_i, sn76477_noise_1_i;
-chip_pool_pkg::sn76477_noise_o_t sn76477_noise_0_o, sn76477_noise_1_o;
+// dsnd_0: discrete sound engine (rtl/rodimus/dsnd_engine/dsnd_engine.sv) on clk_sys, 45.1584 MHz / 941 = 47990 Hz;
+// program = MRA index 5, silent while none is loaded (snd_prog_on)
+chip_pool_pkg::dsnd_i_t dsnd_0_i;
+chip_pool_pkg::dsnd_o_t dsnd_0_o;
+wire signed [15:0] dsnd_0_out;
 
-wire signed [15:0] sn76477_noise_0_audio, sn76477_noise_1_audio;
-
-sn76477_noise #(.CLK_HZ(11_289_000), .NOISE_HZ(3082), .FILTER_EN(1'b1), .AMPLITUDE(6000)) sn76477_noise_0
+dsnd_engine #(.TICK(941)) dsnd_0
 (
-    .clk(clk_master), .reset(reset), .pause(pause), .gate(sn76477_noise_0_i.gate), .audio_out(sn76477_noise_0_audio)
+    .clk(clk_sys), .reset(reset), .pause(pause), .prog_wr(snd_prog_wr), .prog_addr(dn_addr[12:0]),
+    .prog_data(dn_data), .src(dsnd_0_i.src), .out(dsnd_0_out), .out_r(dsnd_0_o.out_r), .sample(dsnd_0_o.sample)
 );
 
-sn76477_noise #(.CLK_HZ(11_289_000), .NOISE_HZ(97493), .FILTER_EN(1'b0), .AMPLITUDE(3000)) sn76477_noise_1
-(
-    .clk(clk_master), .reset(reset), .pause(pause), .gate(sn76477_noise_1_i.gate), .audio_out(sn76477_noise_1_audio)
-);
-
-assign sn76477_noise_0_o.audio = sn76477_noise_0_audio;
-assign sn76477_noise_1_o.audio = sn76477_noise_1_audio;
+assign dsnd_0_o.out = snd_prog_on ? dsnd_0_out : 16'sd0;
 
 /////////////////////////////  Shared ROM blocks  /////////////////////////////
 
@@ -165,7 +174,7 @@ dpram_dc #(.widthad_a(13)) rom5
 
 /////////////////////////////  Shared RAM pool  /////////////////////////////
 
-//   block 0  1K  work RAM                     $0000-$03FF (port B unused)
+//   block 0  1K  work RAM                     $0000-$03FF (port B = hiscore, clk_sys)
 //   block 1  1K  video RAM 2 (FG tilemap)     $0400-$07FF
 //   block 2  1K  video RAM 1 (BG tilemap)     $0800-$0BFF
 //   block 3  1K  colour RAM, FG copy          $0C00-$0FFF (CPU reads back this copy)
@@ -190,7 +199,7 @@ generate
         (
             .clock_a(clk_master), .address_a(pool_i[n].a_addr[ram_aw(n)-1:0]), .data_a(pool_i[n].a_d),
             .wren_a(pool_i[n].a_we), .q_a(pool_o[n].a_q),
-            .clock_b(clk_master), .address_b(pool_i[n].b_addr[ram_aw(n)-1:0]), .data_b(pool_i[n].b_d),
+            .clock_b(n == 0 ? clk_sys : clk_master), .address_b(pool_i[n].b_addr[ram_aw(n)-1:0]), .data_b(pool_i[n].b_d),
             .wren_b(pool_i[n].b_we), .q_b(pool_o[n].b_q)
         );
     end
@@ -201,23 +210,24 @@ endgenerate
 chip_pool_pkg::t65_i_t           snk_t65_0_i;
 chip_pool_pkg::mc6845_i_t        snk_mc6845_0_i;
 chip_pool_pkg::hd38880_i_t       snk_hd38880_0_i;
-chip_pool_pkg::sn76477_noise_i_t snk_sn76477_noise_0_i, snk_sn76477_noise_1_i;
+chip_pool_pkg::dsnd_i_t          snk_dsnd_0_i;
 assign t65_0_i           = snk_t65_0_i;
 assign mc6845_0_i        = snk_mc6845_0_i;
 assign hd38880_0_i       = snk_hd38880_0_i;
-assign sn76477_noise_0_i = snk_sn76477_noise_0_i;
-assign sn76477_noise_1_i = snk_sn76477_noise_1_i;
+assign dsnd_0_i          = snk_dsnd_0_i;
 
 snk6502_board snk
 (
     .clk_master(clk_master), .reset(reset), .pause(pause), .crt_flip(crt_flip), .ce_pix(ce_pix),
     .game_id(game_id), .p1(p1), .p2(p2), .p1_rstick(p1_rstick), .sys_ctl(sys_ctl), .dsw(dsw),
+    .vol_music(vol_music), .vol_sfx(vol_sfx), .vol_speech(vol_speech), .ds_caps(ds_caps),
+    .h_adj(h_adj), .v_adj(v_adj),
     .rgb_r(rgb_r), .rgb_g(rgb_g), .rgb_b(rgb_b), .hsync(hsync), .vsync(vsync), .hblank(hblank), .vblank(vblank),
     .audio(audio), .flip_screen(flip_screen),
+    .hs_address(hs_address), .hs_data_in(hs_data_in), .hs_data_out(hs_data_out), .hs_write(hs_write),
     .t65_0_i(snk_t65_0_i), .t65_0_o(t65_0_o), .mc6845_0_i(snk_mc6845_0_i), .mc6845_0_o(mc6845_0_o),
     .hd38880_0_i(snk_hd38880_0_i), .hd38880_0_o(hd38880_0_o),
-    .sn76477_noise_0_i(snk_sn76477_noise_0_i), .sn76477_noise_0_o(sn76477_noise_0_o),
-    .sn76477_noise_1_i(snk_sn76477_noise_1_i), .sn76477_noise_1_o(sn76477_noise_1_o),
+    .dsnd_0_i(snk_dsnd_0_i), .dsnd_0_o(dsnd_0_o),
     .rom0_a(rom0_a), .rom0_d(rom0_d), .rom1_a(rom1_a), .rom1_d(rom1_d), .rom2_a(rom2_a), .rom2_d(rom2_d),
     .rom3_a(rom3_a), .rom3_d(rom3_d), .rom4_a(rom4_a), .rom4_d(rom4_d), .rom5_a(rom5_a), .rom5_d(rom5_d),
     .pr_i(snk_pr_i), .pr_o(pool_o)
