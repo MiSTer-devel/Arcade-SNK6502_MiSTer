@@ -204,8 +204,8 @@ wire ram_cs = (cpu_addr[15:10] == 6'b000000);
 wire [7:0] ram_dout;
 wire ram_wr = ram_cs & ~cpu_rw_n & cpu_clken;
 
-assign pr_i[0] = '{a_addr: {5'd0, cpu_addr[9:0]}, a_d: cpu_dout, a_we: ram_wr,
-                   b_addr: {5'd0, hs_address[9:0]}, b_d: hs_data_in, b_we: hs_write};
+assign pr_i[0] = '{a_addr: {6'd0, cpu_addr[9:0]}, a_d: cpu_dout, a_we: ram_wr,
+                   b_addr: {6'd0, hs_address[9:0]}, b_d: hs_data_in, b_we: hs_write};
 assign hs_data_out = pr_o[0].b_q;
 assign ram_dout = pr_o[0].a_q;
 
@@ -216,7 +216,7 @@ wire vram2_wr = vram2_cs & ~cpu_rw_n & cpu_clken;
 wire [9:0] vram2_vid_addr;
 wire [7:0] vram2_vid_dout;
 
-assign pr_i[1] = '{a_addr: {5'd0, cpu_addr[9:0]}, a_d: cpu_dout, a_we: vram2_wr, b_addr: {5'd0, vram2_vid_addr}, b_d: 8'd0, b_we: 1'b0};
+assign pr_i[1] = '{a_addr: {6'd0, cpu_addr[9:0]}, a_d: cpu_dout, a_we: vram2_wr, b_addr: {6'd0, vram2_vid_addr}, b_d: 8'd0, b_we: 1'b0};
 assign vram2_cpu_dout = pr_o[1].a_q;
 assign vram2_vid_dout = pr_o[1].b_q;
 
@@ -227,7 +227,7 @@ wire vram1_wr = vram1_cs & ~cpu_rw_n & cpu_clken;
 wire [9:0] vram1_vid_addr;
 wire [7:0] vram1_vid_dout;
 
-assign pr_i[2] = '{a_addr: {5'd0, cpu_addr[9:0]}, a_d: cpu_dout, a_we: vram1_wr, b_addr: {5'd0, vram1_vid_addr}, b_d: 8'd0, b_we: 1'b0};
+assign pr_i[2] = '{a_addr: {6'd0, cpu_addr[9:0]}, a_d: cpu_dout, a_we: vram1_wr, b_addr: {6'd0, vram1_vid_addr}, b_d: 8'd0, b_we: 1'b0};
 assign vram1_cpu_dout = pr_o[2].a_q;
 assign vram1_vid_dout = pr_o[2].b_q;
 
@@ -240,11 +240,11 @@ wire [9:0] colorram_bg_vid_addr;
 wire [7:0] colorram_fg_vid_dout;
 wire [7:0] colorram_bg_vid_dout;
 
-assign pr_i[3] = '{a_addr: {5'd0, cpu_addr[9:0]}, a_d: cpu_dout, a_we: colorram_wr, b_addr: {5'd0, colorram_fg_vid_addr}, b_d: 8'd0, b_we: 1'b0};
+assign pr_i[3] = '{a_addr: {6'd0, cpu_addr[9:0]}, a_d: cpu_dout, a_we: colorram_wr, b_addr: {6'd0, colorram_fg_vid_addr}, b_d: 8'd0, b_we: 1'b0};
 assign colorram_cpu_dout    = pr_o[3].a_q;
 assign colorram_fg_vid_dout = pr_o[3].b_q;
 
-assign pr_i[4] = '{a_addr: {5'd0, cpu_addr[9:0]}, a_d: cpu_dout, a_we: colorram_wr, b_addr: {5'd0, colorram_bg_vid_addr}, b_d: 8'd0, b_we: 1'b0};
+assign pr_i[4] = '{a_addr: {6'd0, cpu_addr[9:0]}, a_d: cpu_dout, a_we: colorram_wr, b_addr: {6'd0, colorram_bg_vid_addr}, b_d: 8'd0, b_we: 1'b0};
 assign colorram_bg_vid_dout = pr_o[4].b_q;
 
 wire charram_cs = (cpu_addr[15:12] == 4'b0001);
@@ -257,11 +257,11 @@ wire charram_wr = charram_cs & ~cpu_rw_n & cpu_clken;
 wire [10:0] charram_vid_addr = {fg_tile_code, fl_line};
 wire [7:0]  charram_p0_dout, charram_p1_dout;
 
-assign pr_i[5] = '{a_addr: {4'd0, cpu_addr[10:0]}, a_d: cpu_dout, a_we: charram_wr & ~cpu_addr[11], b_addr: {4'd0, charram_vid_addr}, b_d: 8'd0, b_we: 1'b0};
+assign pr_i[5] = '{a_addr: {5'd0, cpu_addr[10:0]}, a_d: cpu_dout, a_we: charram_wr & ~cpu_addr[11], b_addr: {5'd0, charram_vid_addr}, b_d: 8'd0, b_we: 1'b0};
 assign charram_p0_cpu_dout = pr_o[5].a_q;
 assign charram_p0_dout     = pr_o[5].b_q;
 
-assign pr_i[6] = '{a_addr: {4'd0, cpu_addr[10:0]}, a_d: cpu_dout, a_we: charram_wr & cpu_addr[11], b_addr: {4'd0, charram_vid_addr}, b_d: 8'd0, b_we: 1'b0};
+assign pr_i[6] = '{a_addr: {5'd0, cpu_addr[10:0]}, a_d: cpu_dout, a_we: charram_wr & cpu_addr[11], b_addr: {5'd0, charram_vid_addr}, b_d: 8'd0, b_we: 1'b0};
 assign charram_p1_cpu_dout = pr_o[6].a_q;
 assign charram_p1_dout     = pr_o[6].b_q;
 
